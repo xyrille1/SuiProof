@@ -3,7 +3,6 @@
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -20,6 +19,9 @@ import { Button } from '@/components/ui/button';
 import { Plus, Video } from 'lucide-react';
 import { mediaManifests } from '@/lib/data';
 import Image from 'next/image';
+import { useWallet } from '@/hooks/use-wallet';
+import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from './ui/toast';
 
 const StatCard = ({ title, value, subtext, subtextBadge, valueColor }: { title: string, value: string, subtext?: string, subtextBadge?: string, valueColor?: string }) => (
   <Card className="shadow-sm">
@@ -43,6 +45,25 @@ type DashboardViewProps = {
 };
 
 export function DashboardView({ onViewManifest }: DashboardViewProps) {
+  const { isConnected, connectWallet } = useWallet();
+  const { toast } = useToast();
+
+  const handleNewAnchor = () => {
+    if (!isConnected) {
+      toast({
+        title: "Wallet Not Connected",
+        description: "Please connect your wallet to create a new anchor.",
+        action: <ToastAction altText="Connect" onClick={connectWallet}>Connect Wallet</ToastAction>
+      });
+    } else {
+      // TODO: Implement actual "New Anchor" flow
+      toast({
+        title: "Wallet Connected",
+        description: "You can now proceed to create a new anchor.",
+      });
+    }
+  };
+
   return (
     <section className="space-y-8">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -51,7 +72,7 @@ export function DashboardView({ onViewManifest }: DashboardViewProps) {
           <p className="text-muted-foreground">Managing immutable birth certificates for field footage.</p>
         </div>
         <div className="flex gap-2">
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button onClick={handleNewAnchor} className="bg-primary text-primary-foreground hover:bg-primary/90">
             <Plus className="mr-2 h-4 w-4" /> New Anchor
           </Button>
         </div>
