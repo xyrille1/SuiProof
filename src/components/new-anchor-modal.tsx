@@ -5,14 +5,19 @@ import { Button } from './ui/button';
 import { Upload, X } from 'lucide-react';
 import { useState } from 'react';
 import Image from 'next/image';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 
 type NewAnchorModalProps = {
   onClose: () => void;
+  onCreateAnchor: (file: File, gps: string, agencyId: string) => void;
 };
 
-export function NewAnchorModal({ onClose }: NewAnchorModalProps) {
+export function NewAnchorModal({ onClose, onCreateAnchor }: NewAnchorModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [gps, setGps] = useState('');
+  const [agencyId, setAgencyId] = useState('');
 
   const handleFileChange = (selectedFile: File) => {
     setFile(selectedFile);
@@ -33,8 +38,7 @@ export function NewAnchorModal({ onClose }: NewAnchorModalProps) {
 
   const handleCreateAnchor = () => {
     if (file) {
-      console.log('Creating anchor for:', file);
-      // TODO: Implement actual anchor creation logic (e.g., call a server endpoint)
+      onCreateAnchor(file, gps, agencyId);
       onClose();
     }
   };
@@ -86,6 +90,16 @@ export function NewAnchorModal({ onClose }: NewAnchorModalProps) {
                     <div className="text-center mt-2 text-sm text-muted-foreground truncate">{file?.name}</div>
                 </div>
             )}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="gps">GPS Coordinates</Label>
+                <Input id="gps" placeholder="e.g., 40.7128N, 74.0060W" value={gps} onChange={(e) => setGps(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="agencyId">Agency ID</Label>
+                <Input id="agencyId" placeholder="e.g., SUI_AP_091" value={agencyId} onChange={(e) => setAgencyId(e.target.value)} />
+              </div>
+            </div>
         </div>
 
         <footer className="mt-8 pt-6 border-t flex gap-2">

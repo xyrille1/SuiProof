@@ -17,7 +17,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Plus, Video } from 'lucide-react';
-import { mediaManifests } from '@/lib/data';
+import { MediaManifest } from '@/lib/data';
 import Image from 'next/image';
 import { useWallet } from '@suiet/wallet-kit';
 import { useToast } from '@/hooks/use-toast';
@@ -43,9 +43,11 @@ const StatCard = ({ title, value, subtext, subtextBadge, valueColor }: { title: 
 
 type DashboardViewProps = {
   onViewManifest: (provenanceId: string) => void;
+  mediaManifests: MediaManifest[];
+  onCreateAnchor: (file: File) => void;
 };
 
-export function DashboardView({ onViewManifest }: DashboardViewProps) {
+export function DashboardView({ onViewManifest, mediaManifests, onCreateAnchor }: DashboardViewProps) {
   const { connected } = useWallet();
   const { toast } = useToast();
   const [isNewAnchorModalOpen, setIsNewAnchorModalOpen] = useState(false);
@@ -153,7 +155,7 @@ export function DashboardView({ onViewManifest }: DashboardViewProps) {
         </Table>
       </Card>
       {isNewAnchorModalOpen && (
-        <NewAnchorModal onClose={() => setIsNewAnchorModalOpen(false)} />
+        <NewAnchorModal onClose={() => setIsNewAnchorModalOpen(false)} onCreateAnchor={onCreateAnchor} />
       )}
     </section>
   );
