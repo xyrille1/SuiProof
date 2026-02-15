@@ -19,9 +19,8 @@ import { Button } from '@/components/ui/button';
 import { Plus, Video } from 'lucide-react';
 import { mediaManifests } from '@/lib/data';
 import Image from 'next/image';
-import { useWallet } from '@/hooks/use-wallet';
+import { useWallet } from '@suiet/wallet-kit';
 import { useToast } from '@/hooks/use-toast';
-import { ToastAction } from './ui/toast';
 
 const StatCard = ({ title, value, subtext, subtextBadge, valueColor }: { title: string, value: string, subtext?: string, subtextBadge?: string, valueColor?: string }) => (
   <Card className="shadow-sm">
@@ -45,15 +44,14 @@ type DashboardViewProps = {
 };
 
 export function DashboardView({ onViewManifest }: DashboardViewProps) {
-  const { isConnected, connectWallet } = useWallet();
+  const { connected } = useWallet();
   const { toast } = useToast();
 
   const handleNewAnchor = () => {
-    if (!isConnected) {
+    if (!connected) {
       toast({
         title: "Wallet Not Connected",
         description: "Please connect your wallet to create a new anchor.",
-        action: <ToastAction altText="Connect" onClick={connectWallet}>Connect Wallet</ToastAction>
       });
     } else {
       // TODO: Implement actual "New Anchor" flow

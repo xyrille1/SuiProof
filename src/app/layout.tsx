@@ -1,8 +1,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
-import { WalletProvider } from '@suiet/wallet-kit';
-import '@suiet/wallet-kit/style.css';
+import WalletProvider from '@/components/wallet-provider';
 
 export const metadata: Metadata = {
   title: 'SuiProof | Content Provenance Protocol',
