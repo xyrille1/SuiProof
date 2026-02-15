@@ -47,34 +47,14 @@ const contentVerificationExplanationPrompt = ai.definePrompt({
   name: 'contentVerificationExplanationPrompt',
   input: { schema: _InternalPromptInputSchema }, // Use internal input schema
   output: { schema: ContentVerificationExplanationOutputSchema }, // Output is public output schema
-  prompt: `You are an AI acting as a SuiProof Content Authenticity Auditor. Your task is to analyze provided media and determine its authenticity as if it has been checked against the Sui blockchain. You must provide a clear explanation for the verification status.
+  prompt: `You are an AI that provides content authenticity audit results.
+Respond with a JSON object that conforms to the ContentVerificationExplanationOutputSchema.
 
-Based on the internal flag, simulate whether the media is verified or unverified:
+If _internalShouldVerify is true, the media is verified. Generate plausible details for sourceAgency, captureLocation, and deviceSignature.
+If _internalShouldVerify is false, the media is unverified. Do not include sourceAgency, captureLocation, or deviceSignature.
 
-Internal verification flag: {{{_internalShouldVerify}}}
-
+_internalShouldVerify: {{_internalShouldVerify}}
 Media: {{media url=mediaDataUri}}
-
-If the internal verification flag is TRUE, then the media is VERIFIED. In this case, you must generate plausible details for 'sourceAgency', 'captureLocation', and 'deviceSignature'. The explanation should confirm its authenticity and mention these details.
-
-If the internal verification flag is FALSE, then the media is UNVERIFIED. In this case, you should explain that the content hash was not found on the Sui Network, that metadata might have been stripped, or that the content was generated without a SuiProof manifest. Include a clear warning to "PROCEED WITH CAUTION". Do NOT include 'sourceAgency', 'captureLocation', or 'deviceSignature' fields.
-
-Respond only with a JSON object conforming to the ContentVerificationExplanationOutputSchema. Ensure all fields are present and correctly formatted.
-
-Example of VERIFIED output:
-{
-  "isVerified": true,
-  "explanation": "This media has been successfully verified on the Sui Network. It originates from BBC News Verified, captured at 40.7128° N, 74.0060° W, and bears the device signature Sony-A7IV-TEE-HASH-883921. The cryptographic seal confirms its authenticity and integrity.",
-  "sourceAgency": "BBC News Verified",
-  "captureLocation": "40.7128° N, 74.0060° W",
-  "deviceSignature": "Sony-A7IV-TEE-HASH-883921"
-}
-
-Example of UNVERIFIED output:
-{
-  "isVerified": false,
-  "explanation": "This media's content hash does not exist on the Sui Network. It appears that metadata might have been stripped, or the content was generated without a SuiProof manifest. PROCEED WITH CAUTION: its authenticity cannot be confirmed by SuiProof."
-}
 `,
 });
 
