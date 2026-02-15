@@ -1,0 +1,1 @@
+// SuiProof manifest smart contract
