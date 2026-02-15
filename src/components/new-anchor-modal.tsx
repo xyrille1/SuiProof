@@ -1,6 +1,6 @@
 'use client';
 
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from './ui/button';
 import { X, Upload } from 'lucide-react';
 
@@ -12,15 +12,8 @@ export function NewAnchorModal({ onClose }: NewAnchorModalProps) {
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-lg w-full p-8 !rounded-3xl shadow-2xl">
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-foreground">Create New Anchor</h2>
-            <p className="text-muted-foreground">Upload a media file to create a new on-chain anchor.</p>
-          </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+        <DialogTitle className="text-2xl font-bold text-foreground">Create New Anchor</DialogTitle>
+        <DialogDescription className="text-muted-foreground">Upload a media file to create a new on-chain anchor.</DialogDescription>
 
         <div className="space-y-6">
           <div className="flex items-center justify-center w-full">
