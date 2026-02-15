@@ -1,8 +1,8 @@
 'use client';
 
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from './ui/button';
-import { X, Upload } from 'lucide-react';
+import { Upload } from 'lucide-react';
 
 type NewAnchorModalProps = {
   onClose: () => void;
@@ -12,10 +12,12 @@ export function NewAnchorModal({ onClose }: NewAnchorModalProps) {
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-lg w-full p-8 !rounded-3xl shadow-2xl">
-        <DialogTitle className="text-2xl font-bold text-foreground">Create New Anchor</DialogTitle>
-        <DialogDescription className="text-muted-foreground">Upload a media file to create a new on-chain anchor.</DialogDescription>
-
-        <div className="space-y-6">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold text-foreground">Create New Anchor</DialogTitle>
+          <DialogDescription className="text-muted-foreground">Upload a media file to create a new on-chain anchor.</DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-6 pt-4">
           <div className="flex items-center justify-center w-full">
             <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80">
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
