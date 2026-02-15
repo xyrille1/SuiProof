@@ -2,14 +2,17 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 
+type Network = 'mainnet' | 'testnet';
+
 // Let's assume a global 'slush' object is injected by the wallet extension
 declare global {
   interface Window {
     slush?: {
       connect: () => Promise<string[]>;
       getAccounts: () => Promise<string[]>;
-      on: (event: string, callback: (accounts: string[]) => void) => void;
-      removeListener: (event: string, callback: (accounts: string[]) => void) => void;
+      on: (event: 'accountsChanged' | 'networkChanged', callback: (data: any) => void) => void;
+      removeListener: (event: string, callback: (data: any) => void) => void;
+      getNetwork?: () => Promise<Network>;
     };
   }
 }
@@ -20,6 +23,7 @@ interface WalletContextType {
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
   walletInstalled: boolean;
+  network: Network | null;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -28,6 +32,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
   const [account, setAccount] = useState<string | null>(null);
   const [walletInstalled, setWalletInstalled] = useState(false);
+  const [network, setNetwork] = useState<Network | null>(null);
 
   useEffect(() => {
     setWalletInstalled(typeof window.slush !== 'undefined');
@@ -43,43 +48,73 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const handleNetworkChanged = useCallback((newNetwork: Network) => {
+    setNetwork(newNetwork);
+  }, []);
+
   useEffect(() => {
     if (walletInstalled && window.slush) {
-        // Check for already connected accounts on load
+        const checkNetwork = async () => {
+          if (window.slush?.getNetwork) {
+            try {
+              const net = await window.slush.getNetwork();
+              handleNetworkChanged(net);
+            } catch (e) {
+              console.error("Could not get network, defaulting to testnet", e);
+              setNetwork('testnet');
+            }
+          } else {
+            setNetwork('testnet');
+          }
+        };
+
         window.slush.getAccounts()
             .then(handleAccountsChanged)
             .catch(console.error);
         
-        // Listen for account changes
-        window.slush.on('accountsChanged', handleAccountsChanged);
+        checkNetwork();
+        
+        const accountsChangedHandler = (accounts: string[]) => handleAccountsChanged(accounts);
+        const networkChangedHandler = (network: Network) => handleNetworkChanged(network);
+        
+        window.slush.on('accountsChanged', accountsChangedHandler);
+        if (window.slush.on) {
+            window.slush.on('networkChanged', networkChangedHandler);
+        }
 
         return () => {
-            window.slush?.removeListener('accountsChanged', handleAccountsChanged);
+            window.slush?.removeListener('accountsChanged', accountsChangedHandler);
+            if (window.slush?.removeListener) {
+              window.slush.removeListener('networkChanged', networkChangedHandler);
+            }
         };
     }
-  }, [walletInstalled, handleAccountsChanged]);
+  }, [walletInstalled, handleAccountsChanged, handleNetworkChanged]);
 
   const connectWallet = async () => {
     if (!walletInstalled || !window.slush) {
       alert('Slush Wallet is not installed. Please install it to continue.');
-      // Maybe open a new tab to the install page
       window.open('https://slushwallet.io', '_blank');
       return;
     }
     try {
       const accounts = await window.slush.connect();
       handleAccountsChanged(accounts);
+      if (window.slush?.getNetwork) {
+        const net = await window.slush.getNetwork();
+        handleNetworkChanged(net);
+      } else {
+        setNetwork('testnet');
+      }
     } catch (error) {
       console.error('Failed to connect to Slush Wallet:', error);
     }
   };
 
   const disconnectWallet = () => {
-    // Wallets usually don't have a programmatic disconnect. 
-    // The user disconnects from the wallet extension itself.
-    // We'll just clear our app state.
     setIsConnected(false);
     setAccount(null);
+    setNetwork(null);
   };
 
   const value = {
@@ -87,7 +122,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     account,
     connectWallet,
     disconnectWallet,
-    walletInstalled
+    walletInstalled,
+    network
   };
 
   return (
