@@ -1,9 +1,10 @@
 [package]
 name = "suiproof"
-version = "0.0.1"
-edition = "2024.beta"
+version = "1.0.0"
+edition = "2024"
 
 [dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
 
 [addresses]
 suiproof = "0x0"
