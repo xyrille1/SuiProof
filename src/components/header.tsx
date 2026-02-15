@@ -1,16 +1,8 @@
 'use client';
 import type { View } from '@/app/page';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Shield, Wallet } from 'lucide-react';
-import { useWallet } from '@/hooks/use-wallet';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Badge } from '@/components/ui/badge';
+import { Shield } from 'lucide-react';
+import { ConnectButton } from '@suiet/wallet-kit';
 
 const SuiProofLogoIcon = ({ className }: { className?: string }) => (
     <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center bg-[linear-gradient(135deg,_#4da2ff_0%,_#32629b_100%)] text-white", className)}>
@@ -23,16 +15,12 @@ type HeaderProps = {
   onNavigate: (view: View) => void;
 };
 
-const truncateAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
-
 export function Header({ currentView, onNavigate }: HeaderProps) {
   const navItemClasses = (view: View) =>
     cn(
       "hover:text-primary transition-colors",
       currentView === view ? "text-primary" : "text-muted-foreground"
     );
-
-  const { isConnected, account, connectWallet, disconnectWallet, network } = useWallet();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card/80 backdrop-blur-md">
@@ -66,41 +54,7 @@ export function Header({ currentView, onNavigate }: HeaderProps) {
             </span>
           </div>
           
-          {isConnected && account ? (
-            <div className="flex items-center gap-2">
-              {network === 'testnet' && (
-                <Badge variant="outline" className="capitalize bg-emerald-100 text-emerald-800 border-emerald-200 font-bold">
-                  Testnet
-                </Badge>
-              )}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="rounded-full bg-secondary hover:bg-muted"
-                  >
-                    <Wallet className="mr-2 h-4 w-4 text-primary" />
-                    {truncateAddress(account)}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={disconnectWallet}>
-                    Disconnect
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          ) : (
-            <Button
-              size="sm"
-              className="rounded-full bg-foreground hover:bg-foreground/80 text-background"
-              onClick={connectWallet}
-            >
-              <Wallet className="mr-2 h-4 w-4" />
-              Connect Slush Wallet
-            </Button>
-          )}
+          <ConnectButton />
         </div>
       </nav>
     </header>
