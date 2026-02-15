@@ -21,6 +21,8 @@ import { mediaManifests } from '@/lib/data';
 import Image from 'next/image';
 import { useWallet } from '@suiet/wallet-kit';
 import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
+import { NewAnchorModal } from './new-anchor-modal';
 
 const StatCard = ({ title, value, subtext, subtextBadge, valueColor }: { title: string, value: string, subtext?: string, subtextBadge?: string, valueColor?: string }) => (
   <Card className="shadow-sm">
@@ -46,6 +48,7 @@ type DashboardViewProps = {
 export function DashboardView({ onViewManifest }: DashboardViewProps) {
   const { connected } = useWallet();
   const { toast } = useToast();
+  const [isNewAnchorModalOpen, setIsNewAnchorModalOpen] = useState(false);
 
   const handleNewAnchor = () => {
     if (!connected) {
@@ -54,11 +57,7 @@ export function DashboardView({ onViewManifest }: DashboardViewProps) {
         description: "Please connect your wallet to create a new anchor.",
       });
     } else {
-      // TODO: Implement actual "New Anchor" flow
-      toast({
-        title: "Wallet Connected",
-        description: "You can now proceed to create a new anchor.",
-      });
+      setIsNewAnchorModalOpen(true);
     }
   };
 
@@ -153,6 +152,9 @@ export function DashboardView({ onViewManifest }: DashboardViewProps) {
           </TableBody>
         </Table>
       </Card>
+      {isNewAnchorModalOpen && (
+        <NewAnchorModal onClose={() => setIsNewAnchorModalOpen(false)} />
+      )}
     </section>
   );
 }
