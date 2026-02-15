@@ -1,3 +1,28 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "news-rally",
+      "description": "A photo of a political rally.",
+      "imageUrl": "https://images.unsplash.com/photo-1770135157315-ab189ef4b1d4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxwb2xpdGljYWwlMjByYWxseXxlbnwwfHx8fDE3NzExNTcwNjJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "political rally"
+    },
+    {
+      "id": "news-rally-large",
+      "description": "A large photo of a political rally.",
+      "imageUrl": "https://images.unsplash.com/photo-1713311355022-88660ad6d68b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxwb2xpdGljYWwlMjByYWxseXxlbnwwfHx8fDE3NzExNTcwNjJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "political rally"
+    },
+    {
+      "id": "protest-coverage",
+      "description": "A photo of protest coverage.",
+      "imageUrl": "https://images.unsplash.com/photo-1592089531488-83053db6467e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwcm90ZXN0JTIwY292ZXJhZ2V8ZW58MHx8fHwxNzcxMTU3MDYyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "protest coverage"
+    },
+    {
+      "id": "protest-coverage-large",
+      "description": "A large photo of protest coverage.",
+      "imageUrl": "https://images.unsplash.com/photo-1715785685700-0526bbe2fec9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwcm90ZXN0JTIwY292ZXJhZ2V8ZW58MHx8fHwxNzcxMTU3MDYyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "protest coverage"
+    }
+  ]
 }
