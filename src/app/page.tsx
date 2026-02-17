@@ -36,7 +36,7 @@ function getPinataUrl(cid: string): string {
  */
 function loadManifestsFromStorage(): MediaManifest[] {
   if (typeof window === "undefined") return initialMediaManifests;
-  
+
   try {
     const stored = localStorage.getItem(MANIFESTS_STORAGE_KEY);
     if (stored) {
@@ -47,7 +47,7 @@ function loadManifestsFromStorage(): MediaManifest[] {
   } catch (error) {
     console.error("Error loading manifests from storage:", error);
   }
-  
+
   return initialMediaManifests;
 }
 
@@ -57,11 +57,11 @@ function loadManifestsFromStorage(): MediaManifest[] {
  */
 function saveManifestsToStorage(manifests: MediaManifest[]) {
   if (typeof window === "undefined") return;
-  
+
   try {
     // Filter out the default manifests, only save user-created ones
     const userManifests = manifests.filter(
-      (m) => !initialMediaManifests.some((initial) => initial.id === m.id)
+      (m) => !initialMediaManifests.some((initial) => initial.id === m.id),
     );
     localStorage.setItem(MANIFESTS_STORAGE_KEY, JSON.stringify(userManifests));
   } catch (error) {
@@ -74,25 +74,25 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedManifest, setSelectedManifest] =
     useState<MediaManifest | null>(null);
-  
+
   /**
    * PERSISTENCE FIX: Load manifests from localStorage on mount
    * This solves the issue where newly created manifests disappear on page refresh
-   * 
+   *
    * HOW IT WORKS:
    * 1. On page load, we check localStorage for user-created manifests
    * 2. We merge them with the default demo manifests
    * 3. When user creates a new anchor, we save it to localStorage
    * 4. On next page load, the user's manifests are restored
-   * 
+   *
    * FUTURE IMPROVEMENT:
    * Instead of localStorage, we should query the Sui blockchain for:
    * - MediaManifest objects owned by the connected wallet
    * - Use SuiClient.getOwnedObjects() filtered by type
    * - This would make data truly decentralized and multi-device
    */
-  const [mediaManifests, setMediaManifests] = useState<MediaManifest[]>(() => 
-    loadManifestsFromStorage()
+  const [mediaManifests, setMediaManifests] = useState<MediaManifest[]>(() =>
+    loadManifestsFromStorage(),
   );
 
   const wallet = useWallet();
@@ -208,7 +208,10 @@ export default function Home() {
       });
 
       // Get the transaction digest
-      const transactionDigest = result.digest || result.effects?.transactionDigest || `0x${Math.random().toString(16).slice(2)}`;
+      const transactionDigest =
+        result.digest ||
+        result.effects?.transactionDigest ||
+        `0x${Math.random().toString(16).slice(2)}`;
 
       // Create the new manifest with Pinata CID
       const newManifest: MediaManifest = {

@@ -4,7 +4,8 @@
 
 **Issue**: When a user creates a new anchor (mints a MediaManifest), it appears in the dashboard list. However, when the page is refreshed, all newly created manifests disappear, leaving only the default demo manifests.
 
-**Root Cause**: 
+**Root Cause**:
+
 - React state (`mediaManifests`) was initialized with only the default manifests from `@/lib/data`
 - State is stored in memory only
 - When the page refreshes, React re-initializes the state to the default values
@@ -45,12 +46,12 @@ Changed from static initialization to lazy initialization:
 ```typescript
 // BEFORE (loses data on refresh)
 const [mediaManifests, setMediaManifests] = useState<MediaManifest[]>(
-  initialMediaManifests
+  initialMediaManifests,
 );
 
 // AFTER (loads from localStorage)
-const [mediaManifests, setMediaManifests] = useState<MediaManifest[]>(() => 
-  loadManifestsFromStorage()
+const [mediaManifests, setMediaManifests] = useState<MediaManifest[]>(() =>
+  loadManifestsFromStorage(),
 );
 ```
 
@@ -128,22 +129,22 @@ Display List = [User Manifests] + [Default Demo Manifests]
 ```typescript
 // Future implementation using Sui RPC
 async function loadManifestsFromBlockchain(walletAddress: string) {
-  const client = new SuiClient({ network: 'testnet' });
-  
+  const client = new SuiClient({ network: "testnet" });
+
   // Query all MediaManifest objects owned by the user
   const objects = await client.getOwnedObjects({
     owner: walletAddress,
     filter: {
-      StructType: `${PACKAGE_ID}::suiproof::MediaManifest`
+      StructType: `${PACKAGE_ID}::suiproof::MediaManifest`,
     },
     options: {
       showContent: true,
       showDisplay: true,
-    }
+    },
   });
-  
+
   // Transform blockchain objects into MediaManifest format
-  return objects.data.map(obj => ({
+  return objects.data.map((obj) => ({
     id: obj.data.objectId,
     fileName: obj.data.content.fields.ipfs_cid,
     ipfsCid: obj.data.content.fields.ipfs_cid,
@@ -153,19 +154,21 @@ async function loadManifestsFromBlockchain(walletAddress: string) {
       gps: obj.data.content.fields.gps_coordinates,
       agencyId: obj.data.content.fields.agency_id,
       captureDate: new Date(obj.data.content.fields.created_at).toUTCString(),
-    }
+    },
     // ... rest of the fields
   }));
 }
 ```
 
 **Blockchain Approach Benefits:**
+
 - ✅ Multi-device sync (data on blockchain)
 - ✅ Truly decentralized (not dependent on localStorage)
 - ✅ Verifiable (can prove ownership on-chain)
 - ✅ Multi-wallet support (different wallets = different manifests)
 
 **Why Not Implemented Yet:**
+
 - Requires Sui RPC client setup
 - Need to handle object parsing from blockchain
 - More complex error handling
@@ -222,7 +225,8 @@ When ready to upgrade:
 
 **Fixed**: Manifests now persist across page refreshes using browser localStorage.
 
-**How**: 
+**How**:
+
 - Load from localStorage on mount
 - Save to localStorage on every change
 - Merge user manifests with default demo manifests

@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Image, { ImageProps } from 'next/image';
-import { ImageOff } from 'lucide-react';
+import { useState } from "react";
+import Image, { ImageProps } from "next/image";
+import { ImageOff } from "lucide-react";
 
-interface IPFSImageProps extends Omit<ImageProps, 'onError'> {
+interface IPFSImageProps extends Omit<ImageProps, "onError"> {
   fallback?: React.ReactNode;
 }
 
@@ -39,7 +39,9 @@ export function IPFSImage({ fallback, alt, ...props }: IPFSImageProps) {
         alt={alt}
         onError={() => setError(true)}
         onLoad={() => setLoading(false)}
-        unoptimized={typeof props.src === 'string' && props.src.includes('pinata.cloud')}
+        unoptimized={
+          typeof props.src === "string" && props.src.includes("pinata.cloud")
+        }
       />
     </>
   );
