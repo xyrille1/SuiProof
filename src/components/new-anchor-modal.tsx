@@ -8,18 +8,26 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "./ui/button";
-import { Upload, X, Loader2 } from "lucide-react";
+import { Upload, X, Loader2, Building2, Wallet } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { Switch } from "./ui/switch";
 
 type NewAnchorModalProps = {
+  open: boolean;
   onClose: () => void;
-  onCreateAnchor: (file: File, gps: string, agencyId: string) => Promise<void>;
+  onCreateAnchor: (
+    file: File,
+    gps: string,
+    agencyId: string,
+    useSponsored?: boolean,
+  ) => Promise<void>;
 };
 
 export function NewAnchorModal({
+  open,
   onClose,
   onCreateAnchor,
 }: NewAnchorModalProps) {
@@ -27,6 +35,7 @@ export function NewAnchorModal({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [gps, setGps] = useState("");
   const [agencyId, setAgencyId] = useState("");
+  const [useSponsored, setUseSponsored] = useState(true); // Default to sponsored
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState("");
 
@@ -51,7 +60,7 @@ export function NewAnchorModal({
     if (file) {
       setIsProcessing(true);
       try {
-        await onCreateAnchor(file, gps, agencyId);
+        await onCreateAnchor(file, gps, agencyId, useSponsored);
         onClose();
       } catch (error) {
         console.error("Error creating anchor:", error);
@@ -69,7 +78,7 @@ export function NewAnchorModal({
   };
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-lg w-full p-8 !rounded-3xl shadow-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-foreground">
@@ -132,6 +141,34 @@ export function NewAnchorModal({
             </div>
           )}
           <div className="space-y-4">
+            {/* Transaction Mode Selector */}
+            <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+              <div className="flex items-center gap-3">
+                {useSponsored ? (
+                  <Building2 className="w-5 h-5 text-primary" />
+                ) : (
+                  <Wallet className="w-5 h-5 text-muted-foreground" />
+                )}
+                <div>
+                  <Label htmlFor="sponsor-mode" className="cursor-pointer">
+                    {useSponsored
+                      ? "Institutional Sponsorship"
+                      : "Direct Wallet"}
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {useSponsored
+                      ? "Institution pays gas fees (recommended for journalists)"
+                      : "You pay gas fees from your wallet"}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="sponsor-mode"
+                checked={useSponsored}
+                onCheckedChange={setUseSponsored}
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="gps">GPS Coordinates</Label>
               <Input
@@ -158,9 +195,9 @@ export function NewAnchorModal({
             variant="outline"
             className="flex-1 rounded-xl font-bold"
             onClick={onClose}
-            disabled={isProcessing}
+            disabled={false}
           >
-            Cancel
+            {isProcessing ? "Close" : "Cancel"}
           </Button>
           <Button
             className="flex-1 rounded-xl font-bold shadow-lg shadow-primary/20"

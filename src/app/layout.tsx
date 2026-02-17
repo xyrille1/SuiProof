@@ -1,11 +1,17 @@
-import type {Metadata} from 'next';
-import './globals.css';
-import { Toaster } from "@/components/ui/toaster"
-import WalletProvider from '@/components/wallet-provider';
+import type { Metadata } from "next";
+import "./globals.css";
+import { Toaster } from "@/components/ui/toaster";
+import dynamic from "next/dynamic";
+
+// Dynamically import WalletProvider with SSR disabled to avoid "self is not defined" error
+const WalletProvider = dynamic(() => import("@/components/wallet-provider"), {
+  ssr: false,
+});
 
 export const metadata: Metadata = {
-  title: 'SuiProof | Content Provenance Protocol',
-  description: 'SuiProof is a decentralized protocol built on the Sui Network that enables journalists and media organizations to "anchor" digital content at the point of capture.',
+  title: "SuiProof | Content Provenance Protocol",
+  description:
+    'SuiProof is a decentralized protocol built on the Sui Network that enables journalists and media organizations to "anchor" digital content at the point of capture.',
 };
 
 export default function RootLayout({
@@ -17,8 +23,15 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;600&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body className="font-body antialiased min-h-screen bg-background text-foreground">
         <WalletProvider>

@@ -1,17 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import type { MediaManifest } from "@/lib/data";
-import { mediaManifests as initialMediaManifests } from "@/lib/data";
-import { Header } from "@/components/header";
 import { DashboardView } from "@/components/dashboard-view";
 import { VerifierView } from "@/components/verifier-view";
 import { ManifestModal } from "@/components/manifest-modal";
 import { useWallet } from "@suiet/wallet-kit";
 import { useToast } from "@/hooks/use-toast";
-import { uploadFileToPinata } from "@/app/actions";
+import { uploadFileToPinata, verifyFileOnBlockchain } from "@/app/actions";
 import { createAnchorMediaTransaction } from "@/lib/sui";
+import { requestSponsoredAnchor } from "@/lib/institutional-node";
 import blake2b from "blake2b";
+
+// Dynamically import Header to avoid SSR issues with wallet kit
+const Header = dynamic(
+  () => import("@/components/header").then((mod) => ({ default: mod.Header })),
+  {
+    ssr: false,
+  },
+);
 
 export type View = "dashboard" | "verify";
 
@@ -32,38 +40,32 @@ function getPinataUrl(cid: string): string {
 
 /**
  * Load manifests from localStorage
- * Combines default manifests with user-created manifests
+ * Returns only user-created manifests (no mock data)
  */
 function loadManifestsFromStorage(): MediaManifest[] {
-  if (typeof window === "undefined") return initialMediaManifests;
+  if (typeof window === "undefined") return [];
 
   try {
     const stored = localStorage.getItem(MANIFESTS_STORAGE_KEY);
     if (stored) {
       const userManifests: MediaManifest[] = JSON.parse(stored);
-      // Merge user manifests with initial manifests (user manifests first)
-      return [...userManifests, ...initialMediaManifests];
+      return userManifests;
     }
   } catch (error) {
     console.error("Error loading manifests from storage:", error);
   }
 
-  return initialMediaManifests;
+  return [];
 }
 
 /**
  * Save user-created manifests to localStorage
- * Only saves manifests that are not in the initial set
  */
 function saveManifestsToStorage(manifests: MediaManifest[]) {
   if (typeof window === "undefined") return;
 
   try {
-    // Filter out the default manifests, only save user-created ones
-    const userManifests = manifests.filter(
-      (m) => !initialMediaManifests.some((initial) => initial.id === m.id),
-    );
-    localStorage.setItem(MANIFESTS_STORAGE_KEY, JSON.stringify(userManifests));
+    localStorage.setItem(MANIFESTS_STORAGE_KEY, JSON.stringify(manifests));
   } catch (error) {
     console.error("Error saving manifests to storage:", error);
   }
@@ -82,14 +84,13 @@ export default function Home() {
    * HOW IT WORKS:
    * 1. On page load, we check localStorage for user-created manifests
    * 2. We merge them with the default demo manifests
-   * 3. When user creates a new anchor, we save it to localStorage
-   * 4. On next page load, the user's manifests are restored
+   * Load manifests from localStorage on mount
+   * No mock data - only real user-created manifests
    *
-   * FUTURE IMPROVEMENT:
-   * Instead of localStorage, we should query the Sui blockchain for:
-   * - MediaManifest objects owned by the connected wallet
-   * - Use SuiClient.getOwnedObjects() filtered by type
-   * - This would make data truly decentralized and multi-device
+   * STATUS VERIFICATION:
+   * - Initially loaded as "Pending"
+   * - Background verification checks blockchain
+   * - Updates status to "Verified" or "Unverified" based on blockchain query
    */
   const [mediaManifests, setMediaManifests] = useState<MediaManifest[]>(() =>
     loadManifestsFromStorage(),
@@ -97,6 +98,58 @@ export default function Home() {
 
   const wallet = useWallet();
   const { toast } = useToast();
+
+  /**
+   * Verify manifest status against blockchain (only for Pending items)
+   * Runs once on mount for efficiency
+   */
+  useEffect(() => {
+    async function verifyManifestStatuses() {
+      // Only verify manifests with "Pending" status
+      const pendingManifests = mediaManifests.filter(
+        (m) => m.status === "Pending",
+      );
+
+      if (pendingManifests.length === 0) return;
+
+      const updatedManifests = await Promise.all(
+        mediaManifests.map(async (manifest) => {
+          // Skip if already verified or unverified
+          if (manifest.status !== "Pending") {
+            return manifest;
+          }
+
+          try {
+            const result = await verifyFileOnBlockchain(
+              manifest.metadata.contentHash,
+            );
+            return {
+              ...manifest,
+              status: result.verified
+                ? ("Verified" as const)
+                : ("Unverified" as const),
+            };
+          } catch (error) {
+            console.error("Error verifying manifest:", error);
+            return {
+              ...manifest,
+              status: "Unverified" as const,
+            };
+          }
+        }),
+      );
+
+      // Update state only if there were pending items
+      setMediaManifests(updatedManifests);
+    }
+
+    if (
+      mediaManifests.length > 0 &&
+      mediaManifests.some((m) => m.status === "Pending")
+    ) {
+      verifyManifestStatuses();
+    }
+  }, []); // Run only once on mount
 
   /**
    * Save manifests to localStorage whenever they change
@@ -123,16 +176,28 @@ export default function Home() {
 
   /**
    * Complete "+ New Anchor" Flow
+   * Supports two modes:
+   * 1. INSTITUTIONAL SPONSORSHIP (Phase 2: "Shutter Click")
+   *    - Sends request to institutional node
+   *    - Node sponsors the transaction (pays gas)
+   *    - Journalist receives confirmation
+   *
+   * 2. DIRECT WALLET (Traditional)
+   *    - Creates PTB locally
+   *    - User signs with wallet
+   *    - User pays gas
+   *
    * Implements the 4-step SuiProof Technical Flow:
    * 1. Client-Side Preparation (BLAKE2b hashing)
    * 2. Pinning to Pinata (get CID)
-   * 3. Slush Wallet Authorization (PTB)
+   * 3. Transaction Authorization
    * 4. Sui Verification (on-chain minting)
    */
   const handleCreateAnchor = async (
     file: File,
     gps: string,
     agencyId: string,
+    useSponsored: boolean = true,
   ) => {
     try {
       // STEP 1: Client-Side Preparation - Generate BLAKE2b hash
@@ -178,47 +243,86 @@ export default function Home() {
 
       const ipfsCid = uploadResult.cid;
 
-      // STEP 3: Slush Wallet Authorization - Create and sign PTB
-      toast({
-        title: "Step 3/4: Creating Transaction",
-        description: "Please approve the transaction in your wallet...",
-      });
+      let transactionDigest: string;
+      let manifestId: string | undefined;
 
-      // Check if wallet is connected
-      if (!wallet.connected || !wallet.account) {
-        throw new Error("Please connect your wallet first");
+      if (useSponsored) {
+        // ===== INSTITUTIONAL SPONSORSHIP MODE =====
+        // Phase 2: "Shutter Click" workflow
+        toast({
+          title: "Step 3/4: Requesting Sponsorship",
+          description: "Institutional node sponsoring your transaction...",
+        });
+
+        // Check if wallet is connected (needed for journalist address)
+        if (!wallet.connected || !wallet.account) {
+          throw new Error("Please connect your wallet first");
+        }
+
+        // Send request to institutional node
+        const sponsorResult = await requestSponsoredAnchor({
+          ipfsCid: ipfsCid,
+          contentHash: fileHash,
+          gpsCoordinates: gps || "N/A",
+          agencyId: agencyId || "N/A",
+          journalistAddress: wallet.account.address,
+        });
+
+        if (!sponsorResult.success) {
+          throw new Error(
+            sponsorResult.error || "Institutional node sponsorship failed",
+          );
+        }
+
+        transactionDigest = sponsorResult.transactionDigest!;
+        manifestId = sponsorResult.manifestId;
+
+        toast({
+          title: "Step 4/4: Transaction Sponsored!",
+          description: `Fee paid by ${sponsorResult.sponsoredBy?.slice(0, 6)}...`,
+        });
+      } else {
+        // ===== DIRECT WALLET MODE =====
+        // Traditional blockchain interaction
+        toast({
+          title: "Step 3/4: Creating Transaction",
+          description: "Please approve the transaction in your wallet...",
+        });
+
+        // Check if wallet is connected
+        if (!wallet.connected || !wallet.account) {
+          throw new Error("Please connect your wallet first");
+        }
+
+        const tx = createAnchorMediaTransaction({
+          cid: ipfsCid,
+          fileHash: fileHash,
+          gps: gps || "N/A",
+          agencyId: agencyId || "N/A",
+        });
+
+        // Sign and execute the transaction using Suiet wallet
+        const result = await wallet.signAndExecuteTransactionBlock({
+          transactionBlock: tx,
+        });
+
+        transactionDigest =
+          result.digest ||
+          result.effects?.transactionDigest ||
+          `0x${Math.random().toString(16).slice(2)}`;
+
+        toast({
+          title: "Step 4/4: Minting On-Chain",
+          description: "MediaManifest object created on Sui Network!",
+        });
       }
-
-      const tx = createAnchorMediaTransaction({
-        cid: ipfsCid,
-        fileHash: fileHash,
-        gps: gps || "N/A",
-        agencyId: agencyId || "N/A",
-      });
-
-      // Sign and execute the transaction using Suiet wallet
-      const result = await wallet.signAndExecuteTransactionBlock({
-        transactionBlock: tx,
-      });
-
-      // STEP 4: Sui Verification - Transaction confirmed
-      toast({
-        title: "Step 4/4: Minting On-Chain",
-        description: "MediaManifest object created on Sui Network!",
-      });
-
-      // Get the transaction digest
-      const transactionDigest =
-        result.digest ||
-        result.effects?.transactionDigest ||
-        `0x${Math.random().toString(16).slice(2)}`;
 
       // Create the new manifest with Pinata CID
       const newManifest: MediaManifest = {
-        id: (mediaManifests.length + 1).toString(),
+        id: manifestId || Date.now().toString(),
         fileName: file.name,
         type: "image",
-        status: "Verified",
+        status: "Verified", // Transaction success = verified on blockchain
         provenanceId: transactionDigest,
         captured: new Date().toLocaleTimeString("en-US", {
           hour: "numeric",
@@ -248,8 +352,10 @@ export default function Home() {
       setMediaManifests([newManifest, ...mediaManifests]);
 
       toast({
-        title: "Anchor Created Successfully!",
-        description: `Your media is now permanently anchored on Sui Network with IPFS CID: ${ipfsCid.slice(0, 12)}...`,
+        title: useSponsored
+          ? "✓ Anchor Created (Institution Sponsored)!"
+          : "✓ Anchor Created Successfully!",
+        description: `Verified on blockchain with IPFS CID: ${ipfsCid.slice(0, 12)}...`,
       });
     } catch (error) {
       console.error("Error creating anchor:", error);
