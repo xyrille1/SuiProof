@@ -4,7 +4,6 @@ module suiproof::suiproof {
     use sui::table::{Self, Table};
     use sui::event;
     use std::string::{Self, String};
-    use sui::object;
 
     // ==================== Error Codes ====================
     
@@ -12,6 +11,23 @@ module suiproof::suiproof {
     const E_ANCHOR_ALREADY_EXISTS: u64 = 0;
 
     // ==================== Structs ====================
+
+    /// Media Manifest - represents an original media capture with full provenance
+    public struct MediaManifest has key, store {
+        id: UID,
+        /// IPFS CID from Pinata
+        ipfs_cid: String,
+        /// BLAKE2b hash of the file content (vector<u8>)
+        content_hash: vector<u8>,
+        /// GPS coordinates (e.g., "40.7128N, 74.0060W")
+        gps_coordinates: String,
+        /// Agency ID (e.g., "SUI_AP_091")
+        agency_id: String,
+        /// The address of the creator (verified journalist)
+        creator: address,
+        /// Timestamp when anchored (in milliseconds)
+        created_at: u64,
+    }
 
     /// An anchor for a piece of content, identified by its hash.
     public struct Anchor has key, store {
@@ -42,6 +58,17 @@ module suiproof::suiproof {
     
     // ==================== Events ====================
     
+    /// Event emitted when a new media manifest is created
+    public struct MediaAnchored has copy, drop {
+        manifest_id: ID,
+        ipfs_cid: String,
+        content_hash_hex: String,
+        gps_coordinates: String,
+        agency_id: String,
+        creator: address,
+        created_at: u64,
+    }
+    
     /// Event emitted when a new anchor is created.
     public struct AnchorCreated has copy, drop {
         anchor_id: ID,
@@ -64,6 +91,47 @@ module suiproof::suiproof {
     }
 
     // ==================== Public Entry Functions ====================
+
+    /// Anchors original media with full provenance data (IPFS CID, hash, GPS, agency)
+    /// This is the main function called by the frontend "+ New Anchor" flow
+    public entry fun anchor_original_media(
+        ipfs_cid: vector<u8>,
+        content_hash: vector<u8>,
+        gps_coordinates: vector<u8>,
+        agency_id: vector<u8>,
+        ctx: &mut TxContext,
+    ) {
+        let sender = tx_context::sender(ctx);
+        let created_at = tx_context::epoch_timestamp_ms(ctx);
+        
+        // Create the MediaManifest object
+        let media_manifest = MediaManifest {
+            id: object::new(ctx),
+            ipfs_cid: string::utf8(ipfs_cid),
+            content_hash,
+            gps_coordinates: string::utf8(gps_coordinates),
+            agency_id: string::utf8(agency_id),
+            creator: sender,
+            created_at,
+        };
+        
+        let manifest_id = object::id(&media_manifest);
+        let content_hash_hex = bytes_to_hex_string(&content_hash);
+        
+        // Emit event for indexing
+        event::emit(MediaAnchored {
+            manifest_id,
+            ipfs_cid: media_manifest.ipfs_cid,
+            content_hash_hex,
+            gps_coordinates: media_manifest.gps_coordinates,
+            agency_id: media_manifest.agency_id,
+            creator: sender,
+            created_at,
+        });
+        
+        // Transfer the MediaManifest to the creator
+        transfer::transfer(media_manifest, sender);
+    }
 
     /// Creates a new content anchor and adds it to the manifest.
     public entry fun create_anchor(
