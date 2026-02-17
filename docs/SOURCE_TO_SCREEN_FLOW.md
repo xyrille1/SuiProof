@@ -13,6 +13,7 @@ This document explains how SuiProof implements the complete **"Source-to-Screen"
 **Technical Implementation**:
 
 1. **Register News Agency** (One-time setup)
+
    ```bash
    # Via Institutional Node
    POST /api/register-agency
@@ -21,13 +22,14 @@ This document explains how SuiProof implements the complete **"Source-to-Screen"
      "agencyId": "SUI_AP_091"
    }
    ```
-   
+
    **Move Contract Function**: `register_agency()`
    - Creates an `AgencyObject` on Sui
    - Owned by agency admin
    - Contains agency name, ID, and admin address
 
 2. **Issue Press Pass** (Per journalist)
+
    ```bash
    POST /api/issue-press-pass
    {
@@ -37,7 +39,7 @@ This document explains how SuiProof implements the complete **"Source-to-Screen"
      "expiresAt": 1735689600000
    }
    ```
-   
+
    **Move Contract Function**: `issue_press_pass()`
    - Creates a `PressPass` NFT
    - Linked to the agency via `agency_id`
@@ -45,6 +47,7 @@ This document explains how SuiProof implements the complete **"Source-to-Screen"
    - Can include expiration date
 
 **Key Files**:
+
 - Smart Contract: [`sui/sources/suiproof.move`](../sui/sources/suiproof.move) - Lines 16-48 (Structs), Lines 160-220 (Functions)
 - Backend API: [`institutional-node/src/index.ts`](../institutional-node/src/index.ts) - Lines 208-280
 
@@ -55,6 +58,7 @@ This document explains how SuiProof implements the complete **"Source-to-Screen"
 **What Happens**: Field journalist captures content. The app performs zero-friction blockchain anchoring with institutional sponsorship.
 
 **User Experience** (Journalist's perspective):
+
 1. Open SuiProof mobile app
 2. Take photo/video
 3. App auto-captures GPS, timestamp
@@ -63,40 +67,40 @@ This document explains how SuiProof implements the complete **"Source-to-Screen"
 
 **Technical Flow**:
 
-| Step | Action | Component | Details |
-|------|--------|-----------|---------|
-| 1 | Capture | Mobile Device | Camera hardware |
-| 2 | Identity Check | zkLogin/Slush | Silent background auth |
-| 3 | Hash Generation | TEE (Trusted Execution Environment) | BLAKE2b-512 hash of raw bytes |
-| 4 | Metadata Bundle | Mobile OS | GPS, UTC time, device ID |
-| 5 | Upload to IPFS | Pinata | Returns CID |
-| 6 | Transaction Request | Journalist → Institutional Node | POST to `/api/anchor-media` |
-| 7 | **Sponsorship** | Institutional Node | Creates PTB, **pays gas** |
-| 8 | Execution | Sui Network | `anchor_original_media()` function |
-| 9 | Confirmation | Institutional Node → Journalist | Returns `manifestId` |
+| Step | Action              | Component                           | Details                            |
+| ---- | ------------------- | ----------------------------------- | ---------------------------------- |
+| 1    | Capture             | Mobile Device                       | Camera hardware                    |
+| 2    | Identity Check      | zkLogin/Slush                       | Silent background auth             |
+| 3    | Hash Generation     | TEE (Trusted Execution Environment) | BLAKE2b-512 hash of raw bytes      |
+| 4    | Metadata Bundle     | Mobile OS                           | GPS, UTC time, device ID           |
+| 5    | Upload to IPFS      | Pinata                              | Returns CID                        |
+| 6    | Transaction Request | Journalist → Institutional Node     | POST to `/api/anchor-media`        |
+| 7    | **Sponsorship**     | Institutional Node                  | Creates PTB, **pays gas**          |
+| 8    | Execution           | Sui Network                         | `anchor_original_media()` function |
+| 9    | Confirmation        | Institutional Node → Journalist     | Returns `manifestId`               |
 
 **Code Example** (Mobile App simulation):
 
 ```typescript
 // In the SuiProof frontend (simulating mobile workflow)
-import { requestSponsoredAnchor } from '@/lib/institutional-node';
+import { requestSponsoredAnchor } from "@/lib/institutional-node";
 
 async function handleShutterClick(file: File, gps: string) {
   // Step 1: Hash file locally
-  const hash = blake2b(64).update(fileBytes).digest('hex');
-  
+  const hash = blake2b(64).update(fileBytes).digest("hex");
+
   // Step 2: Upload to IPFS
   const { cid } = await uploadToPinata(file);
-  
+
   // Step 3: Request institutional sponsorship
   const result = await requestSponsoredAnchor({
     ipfsCid: cid,
     contentHash: hash,
     gpsCoordinates: gps,
-    agencyId: 'SUI_AP_091',
+    agencyId: "SUI_AP_091",
     journalistAddress: walletAddress, // From zkLogin
   });
-  
+
   // Step 4: Show confirmation
   if (result.success) {
     showNotification(`Secured! Manifest: ${result.manifestId}`);
@@ -108,34 +112,35 @@ async function handleShutterClick(file: File, gps: string) {
 
 ```typescript
 // institutional-node/src/index.ts (simplified)
-app.post('/api/anchor-media', async (req, res) => {
-  const { ipfsCid, contentHash, gpsCoordinates, agencyId, journalistAddress } = req.body;
-  
+app.post("/api/anchor-media", async (req, res) => {
+  const { ipfsCid, contentHash, gpsCoordinates, agencyId, journalistAddress } =
+    req.body;
+
   // Create transaction
   const tx = new Transaction();
   tx.moveCall({
     target: `${PACKAGE_ID}::suiproof::anchor_original_media`,
     arguments: [
       tx.pure(new TextEncoder().encode(ipfsCid)),
-      tx.pure(new Uint8Array(Buffer.from(contentHash, 'hex'))),
+      tx.pure(new Uint8Array(Buffer.from(contentHash, "hex"))),
       tx.pure(new TextEncoder().encode(gpsCoordinates)),
       tx.pure(new TextEncoder().encode(agencyId)),
     ],
   });
-  
+
   // CRITICAL: Set journalist as sender, but sponsor pays gas
   tx.setSender(journalistAddress);
   tx.setGasBudget(100000000); // 0.1 SUI
-  
+
   // Sign with institutional sponsor key
   const signature = await sponsorKeypair.signTransaction(await tx.build());
-  
+
   // Execute on-chain
   const result = await suiClient.executeTransactionBlock({
     transactionBlock: tx,
     signature,
   });
-  
+
   res.json({
     success: true,
     transactionDigest: result.digest,
@@ -145,6 +150,7 @@ app.post('/api/anchor-media', async (req, res) => {
 ```
 
 **Key Files**:
+
 - Frontend: [`src/app/page.tsx`](../src/app/page.tsx) - Lines 169-340 (handleCreateAnchor function)
 - Institutional Node Client: [`src/lib/institutional-node.ts`](../src/lib/institutional-node.ts)
 - Institutional Node Server: [`institutional-node/src/index.ts`](../institutional-node/src/index.ts) - Lines 60-155
@@ -157,6 +163,7 @@ app.post('/api/anchor-media', async (req, res) => {
 **What Happens**: Editor receives the original file, makes necessary edits (crop, color correction), and creates a linked version on-chain.
 
 **User Experience** (Editor's perspective):
+
 1. Import original file into editing software (e.g., Photoshop plugin)
 2. Plugin verifies file against blockchain
 3. Make edits (crop, color grade, etc.)
@@ -170,14 +177,14 @@ app.post('/api/anchor-media', async (req, res) => {
 async function saveEditedVersion(
   originalManifest: MediaManifest,
   editedFile: File,
-  editDescription: string
+  editDescription: string,
 ) {
   // Hash the edited version
-  const newHash = blake2b(64).update(editedFileBytes).digest('hex');
-  
+  const newHash = blake2b(64).update(editedFileBytes).digest("hex");
+
   // Upload edited version to IPFS
   const { cid: newCid } = await uploadToPinata(editedFile);
-  
+
   // Create linked version on-chain
   const tx = new Transaction();
   tx.moveCall({
@@ -185,11 +192,11 @@ async function saveEditedVersion(
     arguments: [
       tx.object(originalManifest.id), // Reference to original
       tx.pure(new TextEncoder().encode(newCid)),
-      tx.pure(new Uint8Array(Buffer.from(newHash, 'hex'))),
+      tx.pure(new Uint8Array(Buffer.from(newHash, "hex"))),
       tx.pure(new TextEncoder().encode(editDescription)), // "Cropped 20%"
     ],
   });
-  
+
   await wallet.signAndExecuteTransaction(tx);
 }
 ```
@@ -219,6 +226,7 @@ MediaManifest {
 ```
 
 **Key Files**:
+
 - Smart Contract: [`sui/sources/suiproof.move`](../sui/sources/suiproof.move) - Lines 280-331 (create_edited_version)
 - Frontend Component: [`src/components/new-anchor-modal.tsx`](../src/components/new-anchor-modal.tsx) - Modal UI
 
@@ -229,6 +237,7 @@ MediaManifest {
 **What Happens**: Public sees content on social media/news sites and can verify its authenticity instantly.
 
 **User Experience** (Public viewer):
+
 1. See a photo on Twitter with "Verified" badge
 2. Click badge OR drag image to SuiProof.com
 3. Browser hashes the image locally
@@ -243,17 +252,17 @@ MediaManifest {
 // src/components/verifier-view.tsx
 async function verifyImage(file: File) {
   // Step 1: Hash file locally (browser-side)
-  const hash = blake2b(64).update(fileBytes).digest('hex');
-  
+  const hash = blake2b(64).update(fileBytes).digest("hex");
+
   // Step 2: Query blockchain
   const result = await verifyFileOnBlockchain(hash);
-  
+
   if (result.verified && result.manifestData) {
     // GREEN SEAL: Original verified content
     if (result.manifestData.isOriginal) {
       return {
-        seal: 'green',
-        title: 'Authentic Media Confirmed',
+        seal: "green",
+        title: "Authentic Media Confirmed",
         message: `Original capture by ${result.manifestData.agencyId}`,
         location: result.manifestData.gpsCoordinates,
         timestamp: result.manifestData.createdAt,
@@ -262,9 +271,9 @@ async function verifyImage(file: File) {
     // YELLOW SEAL: Verified edit with lineage
     else {
       return {
-        seal: 'yellow',
-        title: 'Verified Edit',
-        message: 'Traceable to original',
+        seal: "yellow",
+        title: "Verified Edit",
+        message: "Traceable to original",
         editType: result.manifestData.editType,
         parentId: result.manifestData.parentId,
       };
@@ -272,9 +281,10 @@ async function verifyImage(file: File) {
   } else {
     // RED WARNING: No blockchain record found
     return {
-      seal: 'red',
-      title: 'Unverified Content',
-      message: 'No blockchain record found. Possible tampering or AI-generated.',
+      seal: "red",
+      title: "Unverified Content",
+      message:
+        "No blockchain record found. Possible tampering or AI-generated.",
     };
   }
 }
@@ -286,19 +296,19 @@ async function verifyImage(file: File) {
 // src/app/actions.ts
 export async function verifyFileOnBlockchain(contentHash: string) {
   const suiClient = new SuiClient({ url: RPC_URL });
-  
+
   // Query events for this content hash
   const events = await suiClient.queryEvents({
     query: {
       MoveEventType: `${PACKAGE_ID}::suiproof::MediaAnchored`,
     },
   });
-  
+
   // Find matching manifest
-  const match = events.data.find(event => 
-    event.parsedJson.content_hash_hex === contentHash
+  const match = events.data.find(
+    (event) => event.parsedJson.content_hash_hex === contentHash,
   );
-  
+
   if (match) {
     return {
       verified: true,
@@ -314,12 +324,13 @@ export async function verifyFileOnBlockchain(contentHash: string) {
       },
     };
   }
-  
+
   return { verified: false };
 }
 ```
 
 **Key Files**:
+
 - Verifier UI: [`src/components/verifier-view.tsx`](../src/components/verifier-view.tsx)
 - Blockchain Query: [`src/app/actions.ts`](../src/app/actions.ts) - Lines 21-60
 - Smart Contract Events: [`sui/sources/suiproof.move`](../sui/sources/suiproof.move) - Lines 104-132
@@ -437,15 +448,17 @@ export async function verifyFileOnBlockchain(contentHash: string) {
 ## Key Technologies
 
 ### Smart Contract (Move on Sui)
+
 - **Location**: `sui/sources/suiproof.move`
 - **Key Structs**: `AgencyObject`, `PressPass`, `MediaManifest`, `Anchor`
-- **Key Functions**: 
+- **Key Functions**:
   - `register_agency()` - Phase 1
   - `issue_press_pass()` - Phase 1
   - `anchor_original_media()` - Phase 2
   - `create_edited_version()` - Phase 3
 
 ### Institutional Node (Backend Service)
+
 - **Location**: `institutional-node/`
 - **Stack**: Node.js + Express + TypeScript + Sui SDK
 - **Purpose**: Gas sponsorship for journalists
@@ -455,6 +468,7 @@ export async function verifyFileOnBlockchain(contentHash: string) {
   - `POST /api/issue-press-pass` - Phase 1
 
 ### Frontend (Next.js)
+
 - **Location**: `src/`
 - **Key Components**:
   - `verifier-view.tsx` - Phase 4 (Public verification)
@@ -466,6 +480,7 @@ export async function verifyFileOnBlockchain(contentHash: string) {
   - `@suiet/wallet-kit` - Wallet integration
 
 ### Storage Layer
+
 - **IPFS (Pinata)**: Decentralized file storage
 - **Sui Blockchain**: Immutable metadata ledger
 
@@ -474,6 +489,7 @@ export async function verifyFileOnBlockchain(contentHash: string) {
 ## Security Considerations
 
 ### 1. Press Pass Validation
+
 Currently, the institutional node trusts all requests. In production:
 
 ```typescript
@@ -486,27 +502,30 @@ async function validateJournalist(journalistAddress: string, agencyId: string) {
       StructType: `${PACKAGE_ID}::suiproof::PressPass`,
     },
   });
-  
+
   // Verify press pass belongs to correct agency
-  const passData = await suiClient.getObject({ id: pressPass[0].data.objectId });
+  const passData = await suiClient.getObject({
+    id: pressPass[0].data.objectId,
+  });
   if (passData.agency_id !== agencyId) {
-    throw new Error('Unauthorized: PressPass agency mismatch');
+    throw new Error("Unauthorized: PressPass agency mismatch");
   }
-  
+
   // Check expiration
   if (passData.expires_at > 0 && Date.now() > passData.expires_at) {
-    throw new Error('Press pass expired');
+    throw new Error("Press pass expired");
   }
-  
+
   return true;
 }
 ```
 
 ### 2. Rate Limiting
+
 Protect the institutional node from abuse:
 
 ```typescript
-import rateLimit from 'express-rate-limit';
+import rateLimit from "express-rate-limit";
 
 const anchorLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -514,10 +533,11 @@ const anchorLimiter = rateLimit({
   keyGenerator: (req) => req.body.journalistAddress,
 });
 
-app.post('/api/anchor-media', anchorLimiter, handler);
+app.post("/api/anchor-media", anchorLimiter, handler);
 ```
 
 ### 3. Gas Budget Monitoring
+
 Prevent runaway costs:
 
 ```typescript
@@ -528,7 +548,7 @@ tx.setGasBudget(100000000); // 0.1 SUI max
 setInterval(async () => {
   const balance = await suiClient.getBalance({ owner: sponsorAddress });
   if (BigInt(balance.totalBalance) < MIN_BALANCE_THRESHOLD) {
-    sendAlertToAdmin('Low SUI balance in sponsor account!');
+    sendAlertToAdmin("Low SUI balance in sponsor account!");
   }
 }, 60000); // Check every minute
 ```
@@ -555,6 +575,7 @@ cp .env.example .env
 ```
 
 Edit `.env`:
+
 ```env
 SPONSOR_PRIVATE_KEY=<your_sponsor_private_key>
 PACKAGE_ID=<from_step_1>
@@ -562,6 +583,7 @@ SUI_NETWORK=testnet
 ```
 
 Start the node:
+
 ```bash
 npm run dev
 ```
@@ -569,6 +591,7 @@ npm run dev
 ### 3. Configure Frontend
 
 Edit `.env.local`:
+
 ```env
 NEXT_PUBLIC_PACKAGE_ID=<from_step_1>
 NEXT_PUBLIC_INSTITUTIONAL_NODE_URL=http://localhost:3001
@@ -576,6 +599,7 @@ NEXT_PUBLIC_PINATA_JWT=<your_pinata_jwt>
 ```
 
 Start frontend:
+
 ```bash
 npm run dev
 ```
@@ -640,6 +664,7 @@ curl -X POST http://localhost:3001/api/issue-press-pass \
 ## Support
 
 For questions or issues:
+
 - **Documentation**: See README files in each directory
 - **Smart Contract**: [sui/sources/suiproof.move](../sui/sources/suiproof.move)
 - **Institutional Node**: [institutional-node/README.md](../institutional-node/README.md)

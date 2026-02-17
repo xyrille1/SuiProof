@@ -26,6 +26,7 @@ Currently, the API does not require authentication. For production deployments, 
 Check if the institutional node is operational.
 
 **Response**:
+
 ```json
 {
   "status": "healthy",
@@ -36,6 +37,7 @@ Check if the institutional node is operational.
 ```
 
 **Status Codes**:
+
 - `200 OK` - Service is healthy
 
 ---
@@ -47,6 +49,7 @@ Check if the institutional node is operational.
 Get detailed information about the institutional node configuration.
 
 **Response**:
+
 ```json
 {
   "service": "SuiProof Institutional Node",
@@ -62,6 +65,7 @@ Get detailed information about the institutional node configuration.
 ```
 
 **Status Codes**:
+
 - `200 OK` - Information retrieved successfully
 
 ---
@@ -73,6 +77,7 @@ Get detailed information about the institutional node configuration.
 Register a news organization on the Sui blockchain.
 
 **Request Body**:
+
 ```json
 {
   "name": "Associated Press",
@@ -81,10 +86,12 @@ Register a news organization on the Sui blockchain.
 ```
 
 **Parameters**:
+
 - `name` (string, required): Full name of the news agency
 - `agencyId` (string, required): Unique identifier (e.g., "SUI_AP_091")
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -94,6 +101,7 @@ Register a news organization on the Sui blockchain.
 ```
 
 **Error Response**:
+
 ```json
 {
   "success": false,
@@ -102,11 +110,13 @@ Register a news organization on the Sui blockchain.
 ```
 
 **Status Codes**:
+
 - `200 OK` - Agency registered successfully
 - `400 Bad Request` - Missing required fields
 - `500 Internal Server Error` - Transaction failed
 
 **Example**:
+
 ```bash
 curl -X POST http://localhost:3001/api/register-agency \
   -H "Content-Type: application/json" \
@@ -125,6 +135,7 @@ curl -X POST http://localhost:3001/api/register-agency \
 Issue a PressPass NFT credential to a journalist.
 
 **Request Body**:
+
 ```json
 {
   "agencyObjectId": "0x...",
@@ -135,12 +146,14 @@ Issue a PressPass NFT credential to a journalist.
 ```
 
 **Parameters**:
+
 - `agencyObjectId` (string, required): Object ID of the AgencyObject
 - `journalistAddress` (string, required): Sui wallet address of the journalist (0x...)
 - `journalistName` (string, required): Name/identifier of the journalist
 - `expiresAt` (number, optional): Unix timestamp in milliseconds (0 = no expiration)
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -150,6 +163,7 @@ Issue a PressPass NFT credential to a journalist.
 ```
 
 **Error Response**:
+
 ```json
 {
   "success": false,
@@ -158,12 +172,14 @@ Issue a PressPass NFT credential to a journalist.
 ```
 
 **Status Codes**:
+
 - `200 OK` - Press pass issued successfully
 - `400 Bad Request` - Missing required fields
 - `401 Unauthorized` - Caller is not the agency admin
 - `500 Internal Server Error` - Transaction failed
 
 **Example**:
+
 ```bash
 curl -X POST http://localhost:3001/api/issue-press-pass \
   -H "Content-Type: application/json" \
@@ -185,6 +201,7 @@ curl -X POST http://localhost:3001/api/issue-press-pass \
 Request the institutional node to sponsor a content anchoring transaction.
 
 **Request Body**:
+
 ```json
 {
   "ipfsCid": "QmX...",
@@ -197,6 +214,7 @@ Request the institutional node to sponsor a content anchoring transaction.
 ```
 
 **Parameters**:
+
 - `ipfsCid` (string, required): IPFS CID of the uploaded media file
 - `contentHash` (string, required): BLAKE2b-512 hash of the file (64 hex characters)
 - `gpsCoordinates` (string, required): GPS location (e.g., "14.5995° N, 120.9842° E")
@@ -205,6 +223,7 @@ Request the institutional node to sponsor a content anchoring transaction.
 - `pressPassId` (string, optional): Object ID of journalist's PressPass (for validation)
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -216,6 +235,7 @@ Request the institutional node to sponsor a content anchoring transaction.
 ```
 
 **Error Response**:
+
 ```json
 {
   "success": false,
@@ -231,11 +251,13 @@ Request the institutional node to sponsor a content anchoring transaction.
 ```
 
 **Status Codes**:
+
 - `200 OK` - Transaction sponsored and executed successfully
 - `400 Bad Request` - Invalid request format
 - `500 Internal Server Error` - Sponsorship or transaction failed
 
 **Example**:
+
 ```bash
 curl -X POST http://localhost:3001/api/anchor-media \
   -H "Content-Type: application/json" \
@@ -250,6 +272,7 @@ curl -X POST http://localhost:3001/api/anchor-media \
 ```
 
 **Request Validation Rules**:
+
 - `contentHash` must be exactly 64 hexadecimal characters (BLAKE2b-512 output)
 - `journalistAddress` must match Sui address format: `0x` followed by 64 hex chars
 - `ipfsCid` must be a valid IPFS CID (typically starts with "Qm" for v0 or "bafy" for v1)
@@ -271,13 +294,13 @@ All endpoints return errors in a consistent format:
 
 ### Common Error Codes
 
-| HTTP Code | Error | Cause |
-|-----------|-------|-------|
-| `400` | Bad Request | Invalid parameters or missing required fields |
-| `401` | Unauthorized | Invalid API key or insufficient permissions |
-| `429` | Too Many Requests | Rate limit exceeded |
-| `500` | Internal Server Error | Blockchain transaction failed or server error |
-| `503` | Service Unavailable | Sui node not reachable or sponsor account out of gas |
+| HTTP Code | Error                 | Cause                                                |
+| --------- | --------------------- | ---------------------------------------------------- |
+| `400`     | Bad Request           | Invalid parameters or missing required fields        |
+| `401`     | Unauthorized          | Invalid API key or insufficient permissions          |
+| `429`     | Too Many Requests     | Rate limit exceeded                                  |
+| `500`     | Internal Server Error | Blockchain transaction failed or server error        |
+| `503`     | Service Unavailable   | Sui node not reachable or sponsor account out of gas |
 
 ---
 
@@ -294,7 +317,7 @@ All endpoints return errors in a consistent format:
 ### Implementation Example
 
 ```typescript
-import rateLimit from 'express-rate-limit';
+import rateLimit from "express-rate-limit";
 
 const anchorLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -302,11 +325,11 @@ const anchorLimiter = rateLimit({
   keyGenerator: (req) => req.body.journalistAddress, // Per journalist
   message: {
     success: false,
-    error: 'Rate limit exceeded. Please try again later.',
+    error: "Rate limit exceeded. Please try again later.",
   },
 });
 
-app.post('/api/anchor-media', anchorLimiter, anchorHandler);
+app.post("/api/anchor-media", anchorLimiter, anchorHandler);
 ```
 
 ---
@@ -327,6 +350,7 @@ app.post('/api/anchor-media', anchorLimiter, anchorHandler);
 Default: **100,000,000 MIST** (0.1 SUI) per transaction
 
 Adjust in `src/index.ts`:
+
 ```typescript
 tx.setGasBudget(100000000); // 0.1 SUI
 ```
@@ -335,13 +359,14 @@ tx.setGasBudget(100000000); // 0.1 SUI
 
 ```typescript
 setInterval(async () => {
-  const balance = await suiClient.getBalance({ 
-    owner: sponsorAddress 
+  const balance = await suiClient.getBalance({
+    owner: sponsorAddress,
   });
-  
+
   const suiBalance = Number(balance.totalBalance) / 1_000_000_000;
-  
-  if (suiBalance < 10) { // Alert if below 10 SUI
+
+  if (suiBalance < 10) {
+    // Alert if below 10 SUI
     sendAlert(`Low sponsor balance: ${suiBalance} SUI`);
   }
 }, 60000); // Check every minute
@@ -367,24 +392,24 @@ setInterval(async () => {
 For production, add authentication:
 
 ```typescript
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 
 function authenticateJournalist(req, res, next) {
-  const token = req.headers.authorization?.split(' ')[1];
-  
+  const token = req.headers.authorization?.split(" ")[1];
+
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.journalistAddress = decoded.address;
     next();
   } catch (error) {
-    res.status(401).json({ 
-      success: false, 
-      error: 'Invalid token' 
+    res.status(401).json({
+      success: false,
+      error: "Invalid token",
     });
   }
 }
 
-app.post('/api/anchor-media', authenticateJournalist, anchorHandler);
+app.post("/api/anchor-media", authenticateJournalist, anchorHandler);
 ```
 
 ### 3. Press Pass Validation
@@ -392,10 +417,7 @@ app.post('/api/anchor-media', authenticateJournalist, anchorHandler);
 Enhance security by verifying PressPass ownership:
 
 ```typescript
-async function validatePressPass(
-  journalistAddress: string, 
-  agencyId: string
-) {
+async function validatePressPass(journalistAddress: string, agencyId: string) {
   // Query for PressPass NFTs owned by journalist
   const ownedObjects = await suiClient.getOwnedObjects({
     owner: journalistAddress,
@@ -403,23 +425,25 @@ async function validatePressPass(
       StructType: `${PACKAGE_ID}::suiproof::PressPass`,
     },
   });
-  
+
   // Check if any PressPass matches the agency
   for (const obj of ownedObjects.data) {
-    const details = await suiClient.getObject({ 
+    const details = await suiClient.getObject({
       id: obj.data.objectId,
       options: { showContent: true },
     });
-    
+
     const passData = details.data.content.fields;
-    
-    if (passData.agency_id === agencyId && 
-        passData.is_active && 
-        (passData.expires_at === 0 || Date.now() < passData.expires_at)) {
+
+    if (
+      passData.agency_id === agencyId &&
+      passData.is_active &&
+      (passData.expires_at === 0 || Date.now() < passData.expires_at)
+    ) {
       return true;
     }
   }
-  
+
   return false;
 }
 ```
@@ -429,12 +453,12 @@ async function validatePressPass(
 Always use HTTPS for production deployments:
 
 ```typescript
-import https from 'https';
-import fs from 'fs';
+import https from "https";
+import fs from "fs";
 
 const options = {
-  key: fs.readFileSync('privkey.pem'),
-  cert: fs.readFileSync('cert.pem'),
+  key: fs.readFileSync("privkey.pem"),
+  cert: fs.readFileSync("cert.pem"),
 };
 
 https.createServer(options, app).listen(443);
@@ -465,18 +489,18 @@ POST <journalist_webhook_url>
 ### TypeScript/JavaScript
 
 ```typescript
-import { requestSponsoredAnchor } from '@/lib/institutional-node';
+import { requestSponsoredAnchor } from "@/lib/institutional-node";
 
 const result = await requestSponsoredAnchor({
-  ipfsCid: 'QmX...',
-  contentHash: 'abc123...',
-  gpsCoordinates: '14.5995° N, 120.9842° E',
-  agencyId: 'SUI_AP_091',
-  journalistAddress: '0x...',
+  ipfsCid: "QmX...",
+  contentHash: "abc123...",
+  gpsCoordinates: "14.5995° N, 120.9842° E",
+  agencyId: "SUI_AP_091",
+  journalistAddress: "0x...",
 });
 
 if (result.success) {
-  console.log('Anchored! Manifest ID:', result.manifestId);
+  console.log("Anchored! Manifest ID:", result.manifestId);
 }
 ```
 
@@ -502,6 +526,7 @@ if response.json()['success']:
 ## Changelog
 
 ### v1.0.0 (2026-02-17)
+
 - Initial release
 - Phase 1: Agency registration and PressPass issuance
 - Phase 2: Sponsored media anchoring

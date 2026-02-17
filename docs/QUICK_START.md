@@ -40,6 +40,7 @@ cp .env.example .env
 ```
 
 Edit `.env`:
+
 ```env
 # Get your private key (WARNING: Keep this secret!)
 # Run: sui keytool export --key-identity <your-address>
@@ -67,6 +68,7 @@ npm run dev
 ```
 
 You should see:
+
 ```
 🏛️  Institutional Node initialized
 📍 Sponsor Address: 0x...
@@ -83,6 +85,7 @@ cp .env.local.example .env.local  # If this file doesn't exist, create it
 ```
 
 Edit `.env.local`:
+
 ```env
 # Same Package ID from Step 2
 NEXT_PUBLIC_PACKAGE_ID=0x...
@@ -135,6 +138,7 @@ Look for the transaction digest in the response.
 7. **Click** "Create Anchor"
 
 Watch the institutional node terminal - you should see:
+
 ```
 📸 New anchor request from journalist: 0x...
    IPFS CID: QmX...
@@ -159,6 +163,7 @@ Watch the institutional node terminal - you should see:
 ### "Insufficient gas" error
 
 **Solution**: Fund your sponsor account
+
 ```bash
 sui client faucet
 ```
@@ -170,15 +175,19 @@ sui client faucet
 ### "CORS error" when calling institutional node
 
 **Solution**: Add your frontend URL to CORS whitelist in `institutional-node/src/index.ts`:
+
 ```typescript
-app.use(cors({
-  origin: ['http://localhost:3000', 'https://your-domain.com']
-}));
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "https://your-domain.com"],
+  }),
+);
 ```
 
 ### Pinata upload fails
 
-**Solution**: 
+**Solution**:
+
 1. Verify your `PINATA_JWT` is correct
 2. Check your Pinata account hasn't exceeded free tier limits
 3. Try uploading directly at https://app.pinata.cloud to test
@@ -201,6 +210,7 @@ See the complete implementation guide: [SOURCE_TO_SCREEN_FLOW.md](./SOURCE_TO_SC
 ### Institutional Node (Backend)
 
 **Option 1: Railway**
+
 ```bash
 # Install Railway CLI
 npm install -g @railway/cli
@@ -212,12 +222,14 @@ railway up
 ```
 
 **Option 2: DigitalOcean App Platform**
+
 1. Push code to GitHub
 2. Connect repository to App Platform
 3. Set environment variables
 4. Deploy
 
 **Security Checklist**:
+
 - [ ] Use environment variables for secrets
 - [ ] Enable HTTPS
 - [ ] Add API authentication
@@ -228,6 +240,7 @@ railway up
 ### Frontend (Next.js)
 
 **Deploy to Vercel** (recommended):
+
 ```bash
 npm install -g vercel
 vercel

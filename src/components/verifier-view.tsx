@@ -132,7 +132,8 @@ const AuditResult = ({
             Authentic Media Confirmed
           </h3>
           <p className="text-sm text-muted-foreground">
-            This file matches its immutable <strong>"birth certificate"</strong> (MediaManifest) permanently anchored on the Sui Network.
+            This file matches its immutable <strong>"birth certificate"</strong>{" "}
+            (MediaManifest) permanently anchored on the Sui Network.
           </p>
         </div>
 
@@ -177,7 +178,9 @@ const AuditResult = ({
             <div className="flex items-start gap-2">
               <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
               <div>
-                <span className="text-muted-foreground">Location Coordinates: </span>
+                <span className="text-muted-foreground">
+                  Location Coordinates:{" "}
+                </span>
                 <code className="font-mono text-xs font-bold text-foreground bg-white dark:bg-gray-900 px-2 py-0.5 rounded border">
                   {data.gpsCoordinates}
                 </code>
@@ -186,7 +189,9 @@ const AuditResult = ({
             <div className="flex items-start gap-2">
               <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
               <div>
-                <span className="text-muted-foreground">Anchored On-Chain: </span>
+                <span className="text-muted-foreground">
+                  Anchored On-Chain:{" "}
+                </span>
                 <span className="font-bold text-foreground">
                   {data.createdAt}
                 </span>
@@ -203,19 +208,25 @@ const AuditResult = ({
           </h4>
           <div className="space-y-3">
             <div className="flex justify-between items-start gap-4 border-b pb-2">
-              <span className="text-muted-foreground text-sm font-medium">Original File Name</span>
+              <span className="text-muted-foreground text-sm font-medium">
+                Original File Name
+              </span>
               <span className="font-mono text-xs text-foreground truncate max-w-[60%] text-right">
                 {fileName}
               </span>
             </div>
             <div className="flex justify-between items-start gap-4 border-b pb-2">
-              <span className="text-muted-foreground text-sm font-medium">IPFS Storage (CID)</span>
+              <span className="text-muted-foreground text-sm font-medium">
+                IPFS Storage (CID)
+              </span>
               <span className="font-mono text-xs text-foreground truncate max-w-[60%] text-right">
                 {data.ipfsCid}
               </span>
             </div>
             <div className="flex justify-between items-start gap-4 border-b pb-2">
-              <span className="text-muted-foreground text-sm font-medium">MediaManifest ID</span>
+              <span className="text-muted-foreground text-sm font-medium">
+                MediaManifest ID
+              </span>
               <span className="font-mono text-xs text-foreground truncate max-w-[60%] text-right">
                 {data.manifestId}
               </span>
@@ -236,7 +247,8 @@ const AuditResult = ({
                 {data.contentHash}
               </code>
               <p className="text-[10px] text-muted-foreground mt-1.5 italic">
-                ℹ️ Even a single pixel change would produce a completely different hash
+                ℹ️ Even a single pixel change would produce a completely
+                different hash
               </p>
             </div>
           </div>
@@ -249,7 +261,13 @@ const AuditResult = ({
             Edit History & Lineage
           </h4>
           <p className="text-xs text-blue-700 dark:text-blue-400">
-            <strong>This is the original Genesis version.</strong> Future versions will show edit history via <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">parent_id</code> tracking, allowing you to trace cropped or edited versions back to their source.
+            <strong>This is the original Genesis version.</strong> Future
+            versions will show edit history via{" "}
+            <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">
+              parent_id
+            </code>{" "}
+            tracking, allowing you to trace cropped or edited versions back to
+            their source.
           </p>
         </div>
 
@@ -314,19 +332,31 @@ const AuditResult = ({
           <ul className="text-sm text-red-800 dark:text-red-300 space-y-2">
             <li className="flex items-start gap-2">
               <span className="text-red-600 font-bold">•</span>
-              <span><strong>No blockchain record:</strong> This file hash does not exist in any MediaManifest on the Sui Network</span>
+              <span>
+                <strong>No blockchain record:</strong> This file hash does not
+                exist in any MediaManifest on the Sui Network
+              </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-red-600 font-bold">•</span>
-              <span><strong>Possible tampering:</strong> Even a single pixel change produces a completely different hash</span>
+              <span>
+                <strong>Possible tampering:</strong> Even a single pixel change
+                produces a completely different hash
+              </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-red-600 font-bold">•</span>
-              <span><strong>Potential synthetic media:</strong> Could be AI-generated or deepfake content</span>
+              <span>
+                <strong>Potential synthetic media:</strong> Could be
+                AI-generated or deepfake content
+              </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-red-600 font-bold">•</span>
-              <span><strong>Not from verified publisher:</strong> No linkage to a registered News Agency or PressPass</span>
+              <span>
+                <strong>Not from verified publisher:</strong> No linkage to a
+                registered News Agency or PressPass
+              </span>
             </li>
           </ul>
         </div>
@@ -337,7 +367,10 @@ const AuditResult = ({
             Why Trustless Verification Matters
           </h4>
           <p className="text-xs text-muted-foreground">
-            Because the "birth certificates" (MediaManifests) are stored on Sui's immutable blockchain — not in a central database — this negative result is just as trustworthy as a positive match. No one can hide, delete, or forge blockchain records.
+            Because the "birth certificates" (MediaManifests) are stored on
+            Sui's immutable blockchain — not in a central database — this
+            negative result is just as trustworthy as a positive match. No one
+            can hide, delete, or forge blockchain records.
           </p>
         </div>
 
@@ -440,8 +473,9 @@ export function VerifierView() {
           Your Digital Notary for Media Authenticity
         </h2>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Verify any media file against its immutable "birth certificate" on the Sui blockchain.
-          No central authority. No trusted database. Just cryptographic proof.
+          Verify any media file against its immutable "birth certificate" on the
+          Sui blockchain. No central authority. No trusted database. Just
+          cryptographic proof.
         </p>
 
         {/* Trustless Explainer */}
@@ -452,13 +486,20 @@ export function VerifierView() {
           </h3>
           <div className="space-y-2 text-xs text-muted-foreground">
             <p>
-              <strong className="text-foreground">No Central Database:</strong> Media manifests live permanently on Sui's blockchain—not on our servers. Even we cannot delete or modify them.
+              <strong className="text-foreground">No Central Database:</strong>{" "}
+              Media manifests live permanently on Sui's blockchain—not on our
+              servers. Even we cannot delete or modify them.
             </p>
             <p>
-              <strong className="text-foreground">Open Access:</strong> Any developer can build their own verifier using Sui's public API. You don't have to trust us—you can trust the smart contract code itself.
+              <strong className="text-foreground">Open Access:</strong> Any
+              developer can build their own verifier using Sui's public API. You
+              don't have to trust us—you can trust the smart contract code
+              itself.
             </p>
             <p>
-              <strong className="text-foreground">Real-time & Parallel:</strong> Verification happens in milliseconds thanks to Sui's parallel transaction processing.
+              <strong className="text-foreground">Real-time & Parallel:</strong>{" "}
+              Verification happens in milliseconds thanks to Sui's parallel
+              transaction processing.
             </p>
           </div>
         </div>
@@ -474,9 +515,12 @@ export function VerifierView() {
                 1
               </div>
               <div>
-                <h4 className="font-semibold text-sm text-foreground">Local Hash Generation</h4>
+                <h4 className="font-semibold text-sm text-foreground">
+                  Local Hash Generation
+                </h4>
                 <p className="text-xs text-muted-foreground mt-1">
-                  BLAKE2b hash computed <em>in your browser</em>. Your file never leaves your device during verification.
+                  BLAKE2b hash computed <em>in your browser</em>. Your file
+                  never leaves your device during verification.
                 </p>
               </div>
             </div>
@@ -485,9 +529,14 @@ export function VerifierView() {
                 2
               </div>
               <div>
-                <h4 className="font-semibold text-sm text-foreground">Query Sui Network</h4>
+                <h4 className="font-semibold text-sm text-foreground">
+                  Query Sui Network
+                </h4>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Read-only search for a MediaManifest where <code className="bg-muted px-1 rounded">content_hash == [Your File Hash]</code>
+                  Read-only search for a MediaManifest where{" "}
+                  <code className="bg-muted px-1 rounded">
+                    content_hash == [Your File Hash]
+                  </code>
                 </p>
               </div>
             </div>
@@ -496,9 +545,12 @@ export function VerifierView() {
                 3
               </div>
               <div>
-                <h4 className="font-semibold text-sm text-foreground">Seal of Authenticity</h4>
+                <h4 className="font-semibold text-sm text-foreground">
+                  Seal of Authenticity
+                </h4>
                 <p className="text-xs text-muted-foreground mt-1">
-                  If match found: Display the immutable "birth certificate" with origin, GPS, timestamp, and agency ID.
+                  If match found: Display the immutable "birth certificate" with
+                  origin, GPS, timestamp, and agency ID.
                 </p>
               </div>
             </div>
