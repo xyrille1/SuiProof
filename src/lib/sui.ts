@@ -45,10 +45,10 @@ export function createAnchorMediaTransaction(params: AnchorMediaParams) {
   txb.moveCall({
     target: `${packageId}::suiproof::anchor_original_media`,
     arguments: [
-      txb.pure(Array.from(cidBytes)),      // IPFS CID as vector<u8>
-      txb.pure(hashBytes),                  // BLAKE2b hash as vector<u8>
-      txb.pure(Array.from(gpsBytes)),      // GPS coordinates as vector<u8>
-      txb.pure(Array.from(agencyBytes)),   // Agency ID as vector<u8>
+      txb.pure(Array.from(cidBytes)), // IPFS CID as vector<u8>
+      txb.pure(hashBytes), // BLAKE2b hash as vector<u8>
+      txb.pure(Array.from(gpsBytes)), // GPS coordinates as vector<u8>
+      txb.pure(Array.from(agencyBytes)), // Agency ID as vector<u8>
     ],
   });
 
