@@ -1,6 +1,6 @@
 "use server";
 
-import { SuiClient } from "@mysten/sui/client";
+import { SuiJsonRpcClient } from "@mysten/sui/jsonRpc";
 import {
   contentVerificationExplanation,
   type ContentVerificationExplanationOutput,
@@ -124,8 +124,8 @@ export async function verifyFileOnBlockchain(
       };
     }
 
-    // Initialize Sui client
-    const suiClient = new SuiClient({
+    // Initialize Sui JSON-RPC client
+    const suiClient = new SuiJsonRpcClient({
       url:
         network === "mainnet"
           ? "https://fullnode.mainnet.sui.io:443"
