@@ -1,9 +1,25 @@
 "use server";
 
+import { SuiClient } from "@mysten/sui/client";
 import {
   contentVerificationExplanation,
   type ContentVerificationExplanationOutput,
 } from "@/ai/flows/content-verification-explanation";
+
+// Types for blockchain verification
+export type BlockchainVerificationResult = {
+  verified: boolean;
+  manifestData?: {
+    manifestId: string;
+    ipfsCid: string;
+    contentHash: string;
+    gpsCoordinates: string;
+    agencyId: string;
+    creator: string;
+    createdAt: string;
+  };
+  error?: string;
+};
 
 export async function getVerificationResult(
   mediaDataUri: string,
@@ -85,6 +101,90 @@ export async function uploadFileToPinata(formData: FormData): Promise<{
     console.error("Error uploading to Pinata:", error);
     return {
       success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+/**
+ * Server Action: Verify file against Sui blockchain
+ * Queries for MediaAnchored events matching the content hash
+ */
+export async function verifyFileOnBlockchain(
+  contentHashHex: string,
+): Promise<BlockchainVerificationResult> {
+  try {
+    const network = process.env.NEXT_PUBLIC_SUI_NETWORK || "testnet";
+    const packageId = process.env.NEXT_PUBLIC_PACKAGE_ID;
+
+    if (!packageId) {
+      return {
+        verified: false,
+        error: "Package ID not configured",
+      };
+    }
+
+    // Initialize Sui client
+    const suiClient = new SuiClient({
+      url:
+        network === "mainnet"
+          ? "https://fullnode.mainnet.sui.io:443"
+          : "https://fullnode.testnet.sui.io:443",
+    });
+
+    // Query for MediaAnchored events
+    const events = await suiClient.queryEvents({
+      query: {
+        MoveEventType: `${packageId}::suiproof::MediaAnchored`,
+      },
+      limit: 1000, // Get recent events
+    });
+
+    // Find matching event by content_hash_hex
+    const matchingEvent = events.data.find((event) => {
+      const parsedData = event.parsedJson as {
+        content_hash_hex?: string;
+      };
+      return parsedData.content_hash_hex === contentHashHex;
+    });
+
+    if (matchingEvent) {
+      const eventData = matchingEvent.parsedJson as {
+        manifest_id: string;
+        ipfs_cid: string;
+        content_hash_hex: string;
+        gps_coordinates: string;
+        agency_id: string;
+        creator: string;
+        created_at: string;
+      };
+
+      // Format timestamp
+      const timestamp = parseInt(eventData.created_at);
+      const date = new Date(timestamp);
+
+      return {
+        verified: true,
+        manifestData: {
+          manifestId: eventData.manifest_id,
+          ipfsCid: eventData.ipfs_cid,
+          contentHash: eventData.content_hash_hex,
+          gpsCoordinates: eventData.gps_coordinates,
+          agencyId: eventData.agency_id,
+          creator: eventData.creator,
+          createdAt: date.toUTCString(),
+        },
+      };
+    }
+
+    return {
+      verified: false,
+      error: "No matching MediaManifest found on blockchain",
+    };
+  } catch (error) {
+    console.error("Error verifying on blockchain:", error);
+    return {
+      verified: false,
       error: error instanceof Error ? error.message : "Unknown error",
     };
   }

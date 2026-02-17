@@ -9,8 +9,42 @@ module suiproof::suiproof {
     
     /// Error for when an anchor already exists for the given content hash.
     const E_ANCHOR_ALREADY_EXISTS: u64 = 0;
+    /// Error for unauthorized access (no valid press pass)
+    const E_UNAUTHORIZED: u64 = 1;
+    /// Error for invalid agency
+    const E_INVALID_AGENCY: u64 = 2;
 
     // ==================== Structs ====================
+
+    /// Agency Object - represents a news organization registered on-chain
+    public struct AgencyObject has key {
+        id: UID,
+        /// Agency name (e.g., "Associated Press")
+        name: String,
+        /// Unique agency identifier (e.g., "SUI_AP_091")
+        agency_id: String,
+        /// Admin/owner of the agency
+        admin: address,
+        /// Timestamp when agency was registered
+        created_at: u64,
+    }
+
+    /// Press Pass - credential issued to journalists by their agency
+    public struct PressPass has key, store {
+        id: UID,
+        /// Reference to the issuing agency's ID
+        agency_id: String,
+        /// Journalist's wallet address
+        journalist: address,
+        /// Journalist's name or identifier
+        journalist_name: String,
+        /// When the press pass was issued
+        issued_at: u64,
+        /// Optional expiration timestamp (0 = no expiration)
+        expires_at: u64,
+        /// Active status
+        is_active: bool,
+    }
 
     /// Media Manifest - represents an original media capture with full provenance
     public struct MediaManifest has key, store {
@@ -27,6 +61,12 @@ module suiproof::suiproof {
         creator: address,
         /// Timestamp when anchored (in milliseconds)
         created_at: u64,
+        /// Parent manifest ID for edited versions (0x0 for originals)
+        parent_id: ID,
+        /// Type of edit applied (empty string for originals)
+        edit_type: String,
+        /// Whether this is an original capture
+        is_original: bool,
     }
 
     /// An anchor for a piece of content, identified by its hash.
@@ -58,6 +98,24 @@ module suiproof::suiproof {
     
     // ==================== Events ====================
     
+    /// Event emitted when a new agency is registered
+    public struct AgencyRegistered has copy, drop {
+        agency_object_id: ID,
+        name: String,
+        agency_id: String,
+        admin: address,
+        created_at: u64,
+    }
+    
+    /// Event emitted when a press pass is issued
+    public struct PressPassIssued has copy, drop {
+        pass_id: ID,
+        agency_id: String,
+        journalist: address,
+        journalist_name: String,
+        issued_at: u64,
+    }
+    
     /// Event emitted when a new media manifest is created
     public struct MediaAnchored has copy, drop {
         manifest_id: ID,
@@ -67,6 +125,8 @@ module suiproof::suiproof {
         agency_id: String,
         creator: address,
         created_at: u64,
+        parent_id: ID,
+        is_original: bool,
     }
     
     /// Event emitted when a new anchor is created.
@@ -92,8 +152,79 @@ module suiproof::suiproof {
 
     // ==================== Public Entry Functions ====================
 
-    /// Anchors original media with full provenance data (IPFS CID, hash, GPS, agency)
-    /// This is the main function called by the frontend "+ New Anchor" flow
+    /// Phase 1: Register a news agency on-chain
+    /// Called by an agency admin to establish institutional identity
+    public entry fun register_agency(
+        name: vector<u8>,
+        agency_id: vector<u8>,
+        ctx: &mut TxContext,
+    ) {
+        let sender = tx_context::sender(ctx);
+        let created_at = tx_context::epoch_timestamp_ms(ctx);
+        
+        let agency = AgencyObject {
+            id: object::new(ctx),
+            name: string::utf8(name),
+            agency_id: string::utf8(agency_id),
+            admin: sender,
+            created_at,
+        };
+        
+        let agency_id_obj = object::id(&agency);
+        
+        event::emit(AgencyRegistered {
+            agency_object_id: agency_id_obj,
+            name: agency.name,
+            agency_id: agency.agency_id,
+            admin: sender,
+            created_at,
+        });
+        
+        // Transfer agency object to admin
+        transfer::transfer(agency, sender);
+    }
+
+    /// Phase 1: Issue a press pass to a journalist
+    /// Called by agency admin to credential their journalists
+    public entry fun issue_press_pass(
+        agency: &AgencyObject,
+        journalist: address,
+        journalist_name: vector<u8>,
+        expires_at: u64,
+        ctx: &mut TxContext,
+    ) {
+        // Verify sender is the agency admin
+        assert!(tx_context::sender(ctx) == agency.admin, E_UNAUTHORIZED);
+        
+        let issued_at = tx_context::epoch_timestamp_ms(ctx);
+        
+        let press_pass = PressPass {
+            id: object::new(ctx),
+            agency_id: agency.agency_id,
+            journalist,
+            journalist_name: string::utf8(journalist_name),
+            issued_at,
+            expires_at,
+            is_active: true,
+        };
+        
+        let pass_id = object::id(&press_pass);
+        
+        event::emit(PressPassIssued {
+            pass_id,
+            agency_id: press_pass.agency_id,
+            journalist,
+            journalist_name: press_pass.journalist_name,
+            issued_at,
+        });
+        
+        // Transfer press pass to journalist
+        transfer::transfer(press_pass, journalist);
+    }
+
+    /// Phase 2: Anchors original media with full provenance data
+    /// This is the main function called during "Shutter Click" workflow
+    /// Can be sponsored by institutional node (gas paid by sponsor, not journalist)
     public entry fun anchor_original_media(
         ipfs_cid: vector<u8>,
         content_hash: vector<u8>,
@@ -104,7 +235,7 @@ module suiproof::suiproof {
         let sender = tx_context::sender(ctx);
         let created_at = tx_context::epoch_timestamp_ms(ctx);
         
-        // Create the MediaManifest object
+        // Create the MediaManifest object (original capture)
         let media_manifest = MediaManifest {
             id: object::new(ctx),
             ipfs_cid: string::utf8(ipfs_cid),
@@ -113,6 +244,9 @@ module suiproof::suiproof {
             agency_id: string::utf8(agency_id),
             creator: sender,
             created_at,
+            parent_id: object::id_from_address(@0x0), // No parent for originals
+            edit_type: string::utf8(b""), // Empty for originals
+            is_original: true,
         };
         
         let manifest_id = object::id(&media_manifest);
@@ -127,10 +261,58 @@ module suiproof::suiproof {
             agency_id: media_manifest.agency_id,
             creator: sender,
             created_at,
+            parent_id: media_manifest.parent_id,
+            is_original: true,
         });
         
         // Transfer the MediaManifest to the creator
         transfer::transfer(media_manifest, sender);
+    }
+
+    /// Phase 3: Create an edited version of media (e.g., cropped, color-corrected)
+    /// Links back to original via parent_id
+    public entry fun create_edited_version(
+        original_manifest: &MediaManifest,
+        new_ipfs_cid: vector<u8>,
+        new_content_hash: vector<u8>,
+        edit_type: vector<u8>, // e.g., "Cropped 20%", "Color Correction"
+        ctx: &mut TxContext,
+    ) {
+        let sender = tx_context::sender(ctx);
+        let created_at = tx_context::epoch_timestamp_ms(ctx);
+        
+        // Create edited version manifest
+        let edited_manifest = MediaManifest {
+            id: object::new(ctx),
+            ipfs_cid: string::utf8(new_ipfs_cid),
+            content_hash: new_content_hash,
+            gps_coordinates: original_manifest.gps_coordinates, // Inherit from original
+            agency_id: original_manifest.agency_id, // Inherit from original
+            creator: sender,
+            created_at,
+            parent_id: object::id(original_manifest), // Link to original
+            edit_type: string::utf8(edit_type),
+            is_original: false,
+        };
+        
+        let manifest_id = object::id(&edited_manifest);
+        let content_hash_hex = bytes_to_hex_string(&new_content_hash);
+        
+        // Emit event
+        event::emit(MediaAnchored {
+            manifest_id,
+            ipfs_cid: edited_manifest.ipfs_cid,
+            content_hash_hex,
+            gps_coordinates: edited_manifest.gps_coordinates,
+            agency_id: edited_manifest.agency_id,
+            creator: sender,
+            created_at,
+            parent_id: edited_manifest.parent_id,
+            is_original: false,
+        });
+        
+        // Transfer to creator
+        transfer::transfer(edited_manifest, sender);
     }
 
     /// Creates a new content anchor and adds it to the manifest.
