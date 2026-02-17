@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, Video } from "lucide-react";
 import { MediaManifest } from "@/lib/data";
-import Image from "next/image";
+import { IPFSImage } from "@/components/ipfs-image";
 import { useWallet } from "@suiet/wallet-kit";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -164,7 +164,7 @@ export function DashboardView({
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden relative flex-shrink-0">
                       {item.type === "image" && item.imageSrc ? (
-                        <Image
+                        <IPFSImage
                           src={item.imageSrc}
                           alt={item.fileName}
                           width={48}

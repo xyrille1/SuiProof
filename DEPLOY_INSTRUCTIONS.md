@@ -3,6 +3,7 @@
 ## Prerequisites
 
 1. Install Sui CLI if you haven't already:
+
    ```bash
    cargo install --locked --git https://github.com/MystenLabs/sui.git --branch mainnet sui
    ```
@@ -30,11 +31,13 @@ This will create a new wallet address. **Save the recovery phrase safely!**
 ### 3. Get Testnet Tokens
 
 **Option A: Using Faucet Website**
+
 - Go to: https://faucet.sui.io/
 - Enter your wallet address
 - Request tokens
 
 **Option B: Using CLI**
+
 ```bash
 sui client faucet
 ```
@@ -68,6 +71,7 @@ sui client publish --gas-budget 100000000
 ```
 
 **This will:**
+
 - Compile your contract
 - Deploy it to Sui testnet
 - Return the Package ID
@@ -92,7 +96,7 @@ The output will look something like this:
 
 **Copy the Package ID** (the part before `::suiproof::Manifest`)
 
-Example: If you see `0xABCDEF123456::suiproof::Manifest`, 
+Example: If you see `0xABCDEF123456::suiproof::Manifest`,
 your Package ID is: `0xABCDEF123456`
 
 ### 9. Update .env.local
@@ -121,16 +125,20 @@ sui client object YOUR_PACKAGE_ID
 ## Troubleshooting
 
 ### "Insufficient gas"
+
 - Run `sui client faucet` again to get more testnet tokens
 
 ### "Address not found"
+
 - Make sure you've created a wallet: `sui client addresses`
 
 ### "Network error"
+
 - Check your network: `sui client active-env`
 - Should be on testnet: `sui client switch --env testnet`
 
 ### Build Errors
+
 - Check the error message
 - Make sure all dependencies are correct in `Move.toml`
 
@@ -156,6 +164,7 @@ sui client gas
 ## What Happens After Deployment?
 
 Once deployed:
+
 1. Your contract is live on Sui testnet
 2. The `Manifest` shared object is created
 3. Users can call `anchor_original_media` to create MediaManifest objects
