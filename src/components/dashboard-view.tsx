@@ -62,7 +62,7 @@ const StatCard = ({
 type DashboardViewProps = {
   onViewManifest: (provenanceId: string) => void;
   mediaManifests: MediaManifest[];
-  onCreateAnchor: (file: File, gps: string, agencyId: string) => Promise<void>;
+  onCreateAnchor: (file: File, gps: string, agencyId: string, useSponsored?: boolean) => Promise<void>;
 };
 
 export function DashboardView({

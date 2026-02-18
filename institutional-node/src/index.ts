@@ -147,9 +147,11 @@ app.post("/api/anchor-media", async (req: Request, res: Response) => {
       ],
     });
 
-    // CRITICAL: Set the sender to the journalist's address
-    // The sponsor (us) pays the gas, but the journalist is the creator
-    tx.setSender(data.journalistAddress);
+    // NOTE: The sponsor IS the transaction sender (pays gas + signs).
+    // The journalist's address is recorded in the API payload for off-chain
+    // audit trails. A full PTB sponsorship (2-sig) requires the journalist
+    // to pre-sign on their device — use the mobile app flow for that.
+    // For the web dashboard, the institution anchors on behalf of the journalist.
 
     // Step 4: Sponsor the transaction (institution pays gas)
     // Note: In production, you may want to set gas budget limits
@@ -178,10 +180,12 @@ app.post("/api/anchor-media", async (req: Request, res: Response) => {
     console.log(`   📋 Manifest created`);
 
     // Extract manifest ID from object changes
-    const man: anyifestObject = result.objectChanges?.find(
-      (change) =>
-        change.type === "created" &&
-        change.objectType.includes("MediaManifest"),
+    const createdObjects = result.objectChanges?.filter(
+      (change): change is Extract<typeof change, { type: "created" }> =>
+        change.type === "created",
+    );
+    const manifestObject = createdObjects?.find((obj) =>
+      obj.objectType.includes("MediaManifest"),
     );
 
     // Step 7: Return success response to journalist's app

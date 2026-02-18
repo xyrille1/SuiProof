@@ -1,6 +1,6 @@
 "use server";
 
-import { SuiJsonRpcClient } from "@mysten/sui/jsonRpc";
+import { SuiJsonRpcClient, type SuiEvent } from "@mysten/sui/jsonRpc";
 import {
   contentVerificationExplanation,
   type ContentVerificationExplanationOutput,
@@ -124,12 +124,13 @@ export async function verifyFileOnBlockchain(
       };
     }
 
-    // Initialize Sui JSON-RPC client
+    // Initialize Sui client
     const suiClient = new SuiJsonRpcClient({
       url:
         network === "mainnet"
           ? "https://fullnode.mainnet.sui.io:443"
           : "https://fullnode.testnet.sui.io:443",
+      network: network as "mainnet" | "testnet",
     });
 
     // Query for MediaAnchored events
@@ -141,7 +142,7 @@ export async function verifyFileOnBlockchain(
     });
 
     // Find matching event by content_hash_hex
-    const matchingEvent = events.data.find((event) => {
+    const matchingEvent = events.data.find((event: SuiEvent) => {
       const parsedData = event.parsedJson as {
         content_hash_hex?: string;
       };
