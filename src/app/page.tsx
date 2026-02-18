@@ -21,7 +21,18 @@ const Header = dynamic(
   },
 );
 
-export type View = "dashboard" | "verify";
+// Dynamically import InstitutionalNodeView to avoid SSR issues
+const InstitutionalNodeView = dynamic(
+  () =>
+    import("@/components/institutional-node-view").then((mod) => ({
+      default: mod.InstitutionalNodeView,
+    })),
+  {
+    ssr: false,
+  },
+);
+
+export type View = "dashboard" | "verify" | "institutional";
 
 /**
  * LocalStorage key for persisting user's created manifests
@@ -384,6 +395,7 @@ export default function Home() {
           />
         )}
         {view === "verify" && <VerifierView />}
+        {view === "institutional" && <InstitutionalNodeView />}
       </main>
       {isModalOpen && selectedManifest && (
         <ManifestModal manifest={selectedManifest} onClose={handleCloseModal} />

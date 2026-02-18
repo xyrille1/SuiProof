@@ -73,6 +73,168 @@ console.log(`🌐 Network: ${process.env.SUI_NETWORK}`);
 console.log(`📦 Package ID: ${process.env.PACKAGE_ID}`);
 
 // =====================================================
+// Transaction History (In-Memory Storage)
+// =====================================================
+
+type TransactionRecord = {
+  id: string;
+  timestamp: number;
+  type: "anchor" | "press-pass" | "agency";
+  journalist: string;
+  gasCost: number;
+  txDigest: string;
+  status: "success" | "pending" | "failed";
+  details?: {
+    ipfsCid?: string;
+    gps?: string;
+    agencyId?: string;
+    journalistName?: string;
+  };
+};
+
+const transactionHistory: TransactionRecord[] = [];
+const journalistSet = new Set<string>(); // Track unique journalists
+
+function recordTransaction(record: TransactionRecord) {
+  transactionHistory.unshift(record); // Add to beginning for most recent first
+
+  // Track unique journalists
+  if (record.journalist) {
+    journalistSet.add(record.journalist);
+  }
+
+  // Keep only last 1000 transactions to prevent memory issues
+  if (transactionHistory.length > 1000) {
+    transactionHistory.pop();
+  }
+
+  console.log(
+    `   📊 Transaction recorded: ${record.type} - ${record.txDigest}`,
+  );
+}
+
+function calculateGasCost(effects: any): number {
+  try {
+    // Extract gas used from transaction effects
+    if (effects?.gasUsed) {
+      const computationCost = parseInt(effects.gasUsed.computationCost || 0);
+      const storageCost = parseInt(effects.gasUsed.storageCost || 0);
+      const storageRebate = parseInt(effects.gasUsed.storageRebate || 0);
+
+      // Total gas = computation + storage - rebate, convert from MIST to SUI
+      return (computationCost + storageCost - storageRebate) / 1_000_000_000;
+    }
+  } catch (error) {
+    console.warn("Could not calculate gas cost:", error);
+  }
+  return 0.001; // Fallback estimate
+}
+
+/**
+ * Load historical transactions from the Sui blockchain
+ * This function queries all past transactions from the sponsor address
+ * and populates the transaction history
+ */
+async function loadHistoricalTransactions() {
+  console.log("\n🔍 Loading historical transactions from blockchain...");
+
+  try {
+    // Query transactions from the sponsor address
+    const txnResponse = await suiClient.queryTransactionBlocks({
+      filter: { FromAddress: sponsorAddress },
+      options: {
+        showEffects: true,
+        showEvents: true,
+        showInput: true,
+      },
+      limit: 50, // Load last 50 transactions
+    });
+
+    console.log(`   Found ${txnResponse.data.length} transactions`);
+
+    // Process each transaction
+    for (const txBlock of txnResponse.data) {
+      try {
+        // Determine transaction type from the move call
+        let txType: "anchor" | "press-pass" | "agency" | null = null;
+        let journalist = sponsorAddress;
+        let details: any = {};
+
+        // Parse transaction input to determine type
+        if (
+          txBlock.transaction?.data?.transaction?.kind ===
+          "ProgrammableTransaction"
+        ) {
+          const programmableTx = txBlock.transaction.data.transaction;
+          const commands = programmableTx.transactions || [];
+
+          for (const command of commands) {
+            // Check if this is a MoveCall transaction
+            if ("MoveCall" in command) {
+              const moveCall = (command as any).MoveCall;
+              const functionName = moveCall.function;
+
+              // Identify transaction type by function name
+              if (functionName === "anchor_original_media") {
+                txType = "anchor";
+              } else if (functionName === "issue_press_pass") {
+                txType = "press-pass";
+              } else if (functionName === "register_agency") {
+                txType = "agency";
+              }
+            }
+          }
+        }
+
+        // Only record relevant transactions
+        if (txType) {
+          const record: TransactionRecord = {
+            id: txBlock.digest,
+            timestamp: txBlock.timestampMs
+              ? parseInt(txBlock.timestampMs)
+              : Date.now(),
+            type: txType,
+            journalist: journalist,
+            gasCost: calculateGasCost(txBlock.effects),
+            txDigest: txBlock.digest,
+            status:
+              txBlock.effects?.status?.status === "success"
+                ? "success"
+                : "failed",
+            details,
+          };
+
+          // Add to history (but don't log each one to avoid spam)
+          transactionHistory.push(record);
+
+          if (record.journalist && record.journalist !== sponsorAddress) {
+            journalistSet.add(record.journalist);
+          }
+        }
+      } catch (error) {
+        console.warn(
+          `   ⚠️  Could not parse transaction ${txBlock.digest}:`,
+          error,
+        );
+      }
+    }
+
+    // Sort by timestamp (most recent first)
+    transactionHistory.sort((a, b) => b.timestamp - a.timestamp);
+
+    console.log(
+      `   ✅ Loaded ${transactionHistory.length} relevant transactions`,
+    );
+    console.log(
+      `   📊 Stats: ${transactionHistory.filter((t) => t.type === "anchor").length} anchors, ${journalistSet.size} journalists`,
+    );
+  } catch (error) {
+    console.error("   ❌ Error loading historical transactions:", error);
+    console.log("   ℹ️  Continuing with empty history...");
+  }
+}
+
+// =====================================================
 // Request Validation Schemas
 // =====================================================
 
@@ -155,6 +317,7 @@ app.post("/api/anchor-media", async (req: Request, res: Response) => {
 
     // Step 4: Sponsor the transaction (institution pays gas)
     // Note: In production, you may want to set gas budget limits
+    tx.setSender(sponsorAddress); // Set the sponsor as the transaction sender
     tx.setGasBudget(100000000); // 0.1 SUI
 
     console.log(
@@ -187,6 +350,22 @@ app.post("/api/anchor-media", async (req: Request, res: Response) => {
     const manifestObject = createdObjects?.find((obj) =>
       obj.objectType.includes("MediaManifest"),
     );
+
+    // Record transaction in history
+    recordTransaction({
+      id: result.digest,
+      timestamp: Date.now(),
+      type: "anchor",
+      journalist: data.journalistAddress,
+      gasCost: calculateGasCost(result.effects),
+      txDigest: result.digest,
+      status: "success",
+      details: {
+        ipfsCid: data.ipfsCid,
+        gps: data.gpsCoordinates,
+        agencyId: data.agencyId,
+      },
+    });
 
     // Step 7: Return success response to journalist's app
     res.json({
@@ -243,6 +422,20 @@ app.post("/api/register-agency", async (req: Request, res: Response) => {
       signer: sponsorKeypair,
     });
 
+    // Record transaction
+    recordTransaction({
+      id: result.digest,
+      timestamp: Date.now(),
+      type: "agency",
+      journalist: sponsorAddress, // Agency admin
+      gasCost: 0.001, // Estimate
+      txDigest: result.digest,
+      status: "success",
+      details: {
+        agencyId,
+      },
+    });
+
     res.json({
       success: true,
       transactionDigest: result.digest,
@@ -292,6 +485,20 @@ app.post("/api/issue-press-pass", async (req: Request, res: Response) => {
       signer: sponsorKeypair,
     });
 
+    // Record transaction
+    recordTransaction({
+      id: result.digest,
+      timestamp: Date.now(),
+      type: "press-pass",
+      journalist: journalistAddress,
+      gasCost: 0.001, // Estimate
+      txDigest: result.digest,
+      status: "success",
+      details: {
+        journalistName,
+      },
+    });
+
     res.json({
       success: true,
       transactionDigest: result.digest,
@@ -335,12 +542,68 @@ app.get("/info", (req: Request, res: Response) => {
 });
 
 // =====================================================
+// Statistics & Transaction History Endpoints
+// =====================================================
+
+/**
+ * GET /api/stats
+ *
+ * Returns aggregated statistics about sponsored transactions
+ */
+app.get("/api/stats", (req: Request, res: Response) => {
+  const totalTransactions = transactionHistory.length;
+  const mediaAnchored = transactionHistory.filter(
+    (tx) => tx.type === "anchor",
+  ).length;
+  const totalGasSpent = transactionHistory.reduce(
+    (sum, tx) => sum + tx.gasCost,
+    0,
+  );
+  const avgCostPerTx =
+    totalTransactions > 0 ? totalGasSpent / totalTransactions : 0;
+
+  res.json({
+    totalTransactions,
+    gasSpent: totalGasSpent,
+    activeJournalists: journalistSet.size,
+    mediaAnchored,
+    avgCostPerTx,
+  });
+});
+
+/**
+ * GET /api/transactions
+ *
+ * Returns recent transaction history
+ * Query params:
+ *   - limit: number of transactions to return (default: 20, max: 100)
+ */
+app.get("/api/transactions", (req: Request, res: Response) => {
+  const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+  const transactions = transactionHistory.slice(0, limit);
+
+  res.json(transactions);
+});
+
+// =====================================================
 // Start Server
 // =====================================================
 
-app.listen(PORT, () => {
-  console.log(`\n🚀 Institutional Node running on port ${PORT}`);
-  console.log(`📖 Documentation: http://localhost:${PORT}/info`);
-  console.log(`❤️  Health check: http://localhost:${PORT}/health`);
-  console.log(`\n🏛️  Ready to sponsor journalist transactions\n`);
+async function startServer() {
+  // Load historical transactions from blockchain
+  await loadHistoricalTransactions();
+
+  app.listen(PORT, () => {
+    console.log(`\n🚀 Institutional Node running on port ${PORT}`);
+    console.log(`📖 Documentation: http://localhost:${PORT}/info`);
+    console.log(`❤️  Health check: http://localhost:${PORT}/health`);
+    console.log(`📊 Stats: http://localhost:${PORT}/api/stats`);
+    console.log(`\n🏛️  Ready to sponsor journalist transactions\n`);
+  });
+}
+
+// Start the server
+startServer().catch((error) => {
+  console.error("Failed to start server:", error);
+  process.exit(1);
 });

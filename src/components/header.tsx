@@ -1,13 +1,18 @@
-'use client';
-import type { View } from '@/app/page';
-import { cn } from '@/lib/utils';
-import { Shield } from 'lucide-react';
-import { ConnectButton } from '@suiet/wallet-kit';
+"use client";
+import type { View } from "@/app/page";
+import { cn } from "@/lib/utils";
+import { Shield } from "lucide-react";
+import { ConnectButton } from "@suiet/wallet-kit";
 
 const SuiProofLogoIcon = ({ className }: { className?: string }) => (
-    <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center bg-[linear-gradient(135deg,_#4da2ff_0%,_#32629b_100%)] text-white", className)}>
-        <Shield className="w-5 h-5" />
-    </div>
+  <div
+    className={cn(
+      "w-8 h-8 rounded-lg flex items-center justify-center bg-[linear-gradient(135deg,_#4da2ff_0%,_#32629b_100%)] text-white",
+      className,
+    )}
+  >
+    <Shield className="w-5 h-5" />
+  </div>
 );
 
 type HeaderProps = {
@@ -19,7 +24,7 @@ export function Header({ currentView, onNavigate }: HeaderProps) {
   const navItemClasses = (view: View) =>
     cn(
       "hover:text-primary transition-colors",
-      currentView === view ? "text-primary" : "text-muted-foreground"
+      currentView === view ? "text-primary" : "text-muted-foreground",
     );
 
   return (
@@ -33,15 +38,24 @@ export function Header({ currentView, onNavigate }: HeaderProps) {
         </div>
 
         <div className="hidden md:flex items-center space-x-8 text-sm font-medium">
-          <button onClick={() => onNavigate('dashboard')} className={navItemClasses('dashboard')}>
+          <button
+            onClick={() => onNavigate("dashboard")}
+            className={navItemClasses("dashboard")}
+          >
             Journalist Dashboard
           </button>
-          <button onClick={() => onNavigate('verify')} className={navItemClasses('verify')}>
+          <button
+            onClick={() => onNavigate("verify")}
+            className={navItemClasses("verify")}
+          >
             Public Verifier
           </button>
-          <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+          <button
+            onClick={() => onNavigate("institutional")}
+            className={navItemClasses("institutional")}
+          >
             Institutional Node
-          </a>
+          </button>
         </div>
 
         <div className="flex items-center gap-4">
@@ -53,7 +67,7 @@ export function Header({ currentView, onNavigate }: HeaderProps) {
               Associated Press (AP)
             </span>
           </div>
-          
+
           <ConnectButton />
         </div>
       </nav>

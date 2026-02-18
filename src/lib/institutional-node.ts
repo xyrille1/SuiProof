@@ -5,6 +5,8 @@
  * for sponsored transactions (Phase 2: "Shutter Click" workflow)
  */
 
+import type { NodeHealth, NodeStats, NodeTransaction } from "./data";
+
 export type SponsoredAnchorRequest = {
   ipfsCid: string;
   contentHash: string; // BLAKE2b hash in hex
@@ -142,5 +144,93 @@ export async function checkNodeHealth() {
       status: "unhealthy",
       error: error instanceof Error ? error.message : "Unknown error",
     };
+  }
+}
+
+/**
+ * Get detailed node information including health, config, and sponsor details
+ */
+export async function getNodeInfo(): Promise<NodeHealth> {
+  try {
+    const nodeUrl =
+      process.env.NEXT_PUBLIC_INSTITUTIONAL_NODE_URL || "http://localhost:3001";
+
+    const response = await fetch(`${nodeUrl}/info`);
+    const data = await response.json();
+
+    return {
+      status: response.ok ? "healthy" : "down",
+      service: data.service || "SuiProof Institutional Node",
+      network: data.network || "testnet",
+      sponsorAddress: data.sponsor || "0x...",
+      agencyName: data.agencyName,
+      agencyId: data.agencyId,
+    };
+  } catch (error) {
+    return {
+      status: "down",
+      service: "SuiProof Institutional Node",
+      network: "unknown",
+      sponsorAddress: "0x...",
+    };
+  }
+}
+
+/**
+ * Get aggregated statistics about the institutional node
+ * Note: This requires backend implementation in Phase 2
+ */
+export async function getNodeStats(): Promise<NodeStats> {
+  try {
+    const nodeUrl =
+      process.env.NEXT_PUBLIC_INSTITUTIONAL_NODE_URL || "http://localhost:3001";
+
+    const response = await fetch(`${nodeUrl}/api/stats`);
+
+    if (response.ok) {
+      return await response.json();
+    }
+
+    // Fallback mock data if endpoint not yet implemented
+    return {
+      totalTransactions: 0,
+      gasSpent: 0,
+      activeJournalists: 0,
+      mediaAnchored: 0,
+      avgCostPerTx: 0,
+    };
+  } catch (error) {
+    // Return empty stats on error
+    return {
+      totalTransactions: 0,
+      gasSpent: 0,
+      activeJournalists: 0,
+      mediaAnchored: 0,
+      avgCostPerTx: 0,
+    };
+  }
+}
+
+/**
+ * Get recent transactions sponsored by the institutional node
+ * Note: This requires backend implementation in Phase 2
+ */
+export async function getRecentTransactions(
+  limit: number = 20,
+): Promise<NodeTransaction[]> {
+  try {
+    const nodeUrl =
+      process.env.NEXT_PUBLIC_INSTITUTIONAL_NODE_URL || "http://localhost:3001";
+
+    const response = await fetch(`${nodeUrl}/api/transactions?limit=${limit}`);
+
+    if (response.ok) {
+      return await response.json();
+    }
+
+    // Return empty array if endpoint not yet implemented
+    return [];
+  } catch (error) {
+    return [];
   }
 }

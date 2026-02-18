@@ -23,3 +23,39 @@ export type MediaManifest = {
     captureDate: string;
   };
 };
+
+/**
+ * Institutional Node Types
+ */
+export type NodeTransaction = {
+  id: string;
+  timestamp: number;
+  type: "anchor" | "press-pass" | "agency";
+  journalist: string;
+  gasCost: number;
+  txDigest: string;
+  status: "success" | "pending" | "failed";
+  details?: {
+    ipfsCid?: string;
+    gps?: string;
+    agencyId?: string;
+  };
+};
+
+export type NodeStats = {
+  totalTransactions: number;
+  gasSpent: number;
+  activeJournalists: number;
+  mediaAnchored: number;
+  avgCostPerTx: number;
+};
+
+export type NodeHealth = {
+  status: "healthy" | "warning" | "down";
+  service: string;
+  network: string;
+  sponsorAddress: string;
+  balance?: number;
+  agencyName?: string;
+  agencyId?: string;
+};
