@@ -44,14 +44,7 @@ export function ManifestModal({ manifest, onClose }: ManifestModalProps) {
                 OID: {manifest.provenanceId}
               </p>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="h-8 w-8"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            {/* Removed close (x) button as requested */}
           </div>
 
           <div className="space-y-6">
