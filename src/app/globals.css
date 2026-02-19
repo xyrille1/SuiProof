@@ -1,3 +1,17 @@
+/* Hide all wallet options except Slush Wallet in Suiet ConnectButton */
+.suiet-wallet-list__item {
+  display: none !important;
+}
+.suiet-wallet-list__item[data-wallet="slush"] {
+  display: flex !important;
+}
+.suiet-wallet-list__group,
+.suiet-wallet-list__group-label {
+  display: none !important;
+}
+.suiet-wallet-list__item[data-wallet]:not([data-wallet="slush"]) {
+  display: none !important;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
