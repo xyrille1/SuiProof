@@ -3,7 +3,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import WalletProviderWrapper from "@/components/wallet-provider-wrapper";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "SuiProof | Content Provenance Protocol",
