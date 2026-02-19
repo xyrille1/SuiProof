@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
-import dynamic from "next/dynamic";
+import WalletProviderWrapper from "@/components/wallet-provider-wrapper";
 
-// Dynamically import WalletProvider with SSR disabled to avoid "self is not defined" error
-const WalletProvider = dynamic(() => import("@/components/wallet-provider"), {
-  ssr: false,
-});
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: "SuiProof | Content Provenance Protocol",
@@ -34,10 +31,10 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased min-h-screen bg-background text-foreground">
-        <WalletProvider>
+        <WalletProviderWrapper>
           {children}
           <Toaster />
-        </WalletProvider>
+        </WalletProviderWrapper>
       </body>
     </html>
   );
