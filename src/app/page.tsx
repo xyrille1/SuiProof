@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { useWallet } from "@suiet/wallet-kit";
 import type { MediaManifest } from "@/lib/data";
 import { DashboardView } from "@/components/dashboard-view";
 import { VerifierView } from "@/components/verifier-view";
@@ -13,11 +14,7 @@ import { createAnchorMediaTransaction } from "@/lib/sui";
 import { requestSponsoredAnchor } from "@/lib/institutional-node";
 import blake2b from "blake2b";
 
-// Dynamically import wallet-kit hooks and components to avoid SSR issues
-const useWallet = dynamic(
-  () => import("@suiet/wallet-kit").then((mod) => mod.useWallet),
-  { ssr: false },
-) as typeof import("@suiet/wallet-kit").useWallet;
+
 
 // Dynamically import Header to avoid SSR issues with wallet kit
 const Header = dynamic(
