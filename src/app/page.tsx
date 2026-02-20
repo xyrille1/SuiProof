@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -13,8 +12,6 @@ import { uploadFileToPinata, verifyFileOnBlockchain } from "@/app/actions";
 import { createAnchorMediaTransaction } from "@/lib/sui";
 import { requestSponsoredAnchor } from "@/lib/institutional-node";
 import blake2b from "blake2b";
-
-
 
 // Dynamically import Header to avoid SSR issues with wallet kit
 const Header = dynamic(

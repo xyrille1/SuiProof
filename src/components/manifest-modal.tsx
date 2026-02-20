@@ -1,6 +1,11 @@
 "use client";
 import type { MediaManifest } from "@/lib/data";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "./ui/button";
 import { X, Camera, Pen } from "lucide-react";
 import { IPFSImage } from "@/components/ipfs-image";
@@ -14,6 +19,10 @@ export function ManifestModal({ manifest, onClose }: ManifestModalProps) {
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl w-full p-0 !rounded-3xl shadow-2xl overflow-hidden grid-cols-1 md:grid-cols-2 grid max-h-[90vh]">
+        <DialogTitle>Media Manifest Details</DialogTitle>
+        <DialogDescription>
+          Birth certificate and metadata for anchored media asset.
+        </DialogDescription>
         <div className="md:w-full bg-black flex items-center justify-center relative order-1 md:order-1">
           {manifest.modalImageSrc ? (
             <IPFSImage
